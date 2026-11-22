@@ -199,14 +199,29 @@ export async function restoreLibrary(link, backup, heartbeat, progress) {
   }
 }
 
+const NAM_ERRORS = [
+  [/no A2-Lite part|no width-3 A2-Lite model/i, "captura sem modelo A2-Lite (a GP-5 só toca NAM A2-Lite)"],
+  [/not a NAM A2 capture/i, "não é uma captura NAM A2"],
+  [/must be made at 48 kHz/i, "a captura precisa ser feita em 48 kHz"],
+  [/not a NAM capture/i, "o arquivo não é uma captura NAM"],
+];
+
+function namError(error) {
+  const message = String(error?.message ?? error);
+  for (const [pattern, text] of NAM_ERRORS) if (pattern.test(message)) return text;
+  return message;
+}
+
 export async function prepareSlotFile(file, slot) {
   if (!Number.isInteger(slot) || slot < 1 || slot > 30) throw new Error("Escolha um slot de 1 a 30.");
   if (file.size > 32 * 1024 * 1024) throw new Error("O arquivo ultrapassa 32 MB.");
   const capture = /\.nam$/i.test(file.name);
   const label = file.name.replace(/\.[^.]+$/, "");
   let data;
-  if (capture) data = convertNam(await file.text(), label).blob;
-  else if (/\.wav$/i.test(file.name)) {
+  if (capture) {
+    try { data = convertNam(await file.text(), label).blob; }
+    catch (error) { throw new Error(namError(error)); }
+  } else if (/\.wav$/i.test(file.name)) {
     const { samples } = await decodeIr(new Uint8Array(await file.arrayBuffer()));
     data = makeCabFile(samples, label);
   } else throw new Error("Selecione uma captura NAM A2 ou um IR WAV.");

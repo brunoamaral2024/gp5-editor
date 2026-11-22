@@ -1,7 +1,7 @@
 import { installCaptureBank } from "./capture-bank.js";
 import { describeMidi } from "./midi-format.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
+import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import4";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
