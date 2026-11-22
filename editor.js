@@ -1,7 +1,8 @@
 import { installCaptureBank } from "./capture-bank.js";
 import { describeMidi } from "./midi-format.js";
+import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import4";
+import { exportLibrary, listInstalledFiles, namError, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import8";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -18,6 +19,15 @@ function toast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { element.hidden = true; }, 2600);
 }
+let saveTimer;
+function setSaveState(text) {
+  const element = get("saveState");
+  if (!element) return;
+  element.textContent = text;
+  clearTimeout(saveTimer);
+  if (text === "Salvo")
+    saveTimer = setTimeout(() => { if (element.textContent === "Salvo") element.textContent = ""; }, 2400);
+}
 const setDisabled = (disabled) => {
   for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput")]) panel.disabled = disabled;
   const indicator = get("connectionState");
@@ -26,7 +36,7 @@ const setDisabled = (disabled) => {
   selectedToggle.disabled = disabled;
   if (disabled) lastTap = undefined;
   get("reloadSlots").disabled = disabled;
-  for (const id of ["chainBypass", "tunerToggle", "mapVolume", "driveOnly"]) get(id).disabled = disabled;
+  for (const id of ["chainBypass", "tunerToggle", "mapVolume", "driveOnly", "visorPrev", "visorNext", "saveScene"]) get(id).disabled = disabled;
   get("bankSendFiles").disabled = disabled;
   get("bankSend").disabled = disabled;
   get("boardFootMode").disabled = disabled;
@@ -430,6 +440,9 @@ function renderVisor() {
   get("visorName").textContent = connected ? name : "GP-5 desconectada";
   get("visorScene").textContent = connected ? ["BASE", "SOLO", "AMBIENTE", "CENA 4"][Number(current[27] ?? 0)] ?? "—" : "—";
   get("visorState").textContent = !connected ? "" : mode === 1 ? "BYPASS" : mode === 2 ? "SÓ DRIVE" : "CADEIA";
+  const hasSlots = connected && installed.some(entry => entry.kind === "tone");
+  get("visorPrev").disabled = !hasSlots;
+  get("visorNext").disabled = !hasSlots;
 }
 
 function showValues() {
@@ -594,6 +607,31 @@ get("quickGlobal").addEventListener("click", () => {
   if (link) get("globalBass").focus();
   else toast("Conecte a GP-5 para ajustar o EQ global.");
 });
+
+function jumpBank(step) {
+  if (!link || libraryBusy) return;
+  const slots = installed.filter(entry => entry.kind === "tone").map(entry => entry.slot).sort((a, b) => a - b);
+  if (!slots.length) { toast("Nenhuma captura nos slots da GP-5."); return; }
+  const currentSlot = Number(current[7] ?? 0);
+  let target = (currentSlot ? Math.ceil(currentSlot / 4) : 0) + step;
+  while (target >= 1 && target <= 8) {
+    const slot = slots.find(candidate => Math.ceil(candidate / 4) === target);
+    if (slot !== undefined) {
+      run(async () => {
+        if (!link) return;
+        clearExpression();
+        await writeParam(7, slot);
+        await refresh();
+        toast(`Banco ${String(target).padStart(2, "0")} · slot ${String(slot).padStart(2, "0")}`);
+      });
+      return;
+    }
+    target += step;
+  }
+  toast(step > 0 ? "Último banco com capturas" : "Primeiro banco com capturas");
+}
+get("visorPrev").addEventListener("click", () => jumpBank(-1));
+get("visorNext").addEventListener("click", () => jumpBank(1));
 
 async function readExtraParameters(group) {
   const {id} = group[0];
@@ -790,6 +828,7 @@ for (const { id, input } of [...fields, ...extraFields, ...stereoFields, ...live
     const value = input.type === "checkbox" ? Number(input.checked) : Number(input.value);
     run(async () => {
       if (!link) return;
+      setSaveState("Salvando…");
       if (id === 27 || id === 7) clearExpression();
       await writeParam(id, value);
       const pairedEffect = Object.values(toggles).find(effect => effect.bypass && effect.type === id);
@@ -798,9 +837,28 @@ for (const { id, input } of [...fields, ...extraFields, ...stereoFields, ...live
       if (id === 63) await activateAmplifier();
       input.blur();
       await refresh();
+      if (current[id] !== value) {
+        await writeParam(id, value);
+        await refresh();
+      }
+      setSaveState(current[id] === value ? "Salvo" : "Não confirmado");
     });
   });
 }
+get("saveScene").addEventListener("click", () => run(async () => {
+  if (!link || libraryBusy) return;
+  setSaveState("Salvando…");
+  const list = [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])];
+  for (const { id, input } of list) {
+    const value = input.type === "checkbox" ? Number(input.checked) : Number(input.value);
+    if (Number.isFinite(value)) await writeParam(id, value);
+  }
+  await refresh();
+  const saved = list.every(({ id, input }) =>
+    current[id] === (input.type === "checkbox" ? Number(input.checked) : Number(input.value)));
+  setSaveState(saved ? "Salvo" : "Não confirmado");
+  toast(saved ? "Cena salva na GP-5" : "A GP-5 não confirmou todos os ajustes. Tente de novo.");
+}));
 get("worshipSettings").addEventListener("click", () => {
   if (!link || libraryBusy) return;
   run(async () => {
@@ -1045,14 +1103,14 @@ function saveDownload(data, filename, type = "application/octet-stream") {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto = false) {
+async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto = false, askConfirm = true) {
   if (!link || libraryBusy) throw new Error("Conecte a GP-5 antes de enviar os arquivos.");
   const extension = kind === "cab" ? /\.wav$/i : /\.nam$/i;
   const format = kind === "cab" ? "WAV" : "NAM A2";
   if (!files.length) throw new Error(`Use Escolher arquivos aqui e selecione os arquivos ${format} antes de enviar.`);
   if (!Number.isInteger(slot) || slot < 1 || slot > 30) throw new Error("Escolha um slot de 1 a 30.");
   if (files.some(file => !extension.test(file.name))) throw new Error(`Selecione apenas arquivos ${format}.`);
-  if (files.length === 1 && !auto && !confirm(`Gravar no slot ${slot}? O arquivo nesse slot será substituído.`)) return;
+  if (files.length === 1 && !auto && askConfirm && !confirm(`Gravar no slot ${slot}? O arquivo nesse slot será substituído.`)) return;
   await transferLibrary(2, async (heartbeat) => {
     progress(`Preparando ${files.length} arquivo(s) ${format}…`);
     const plan = files.length === 1 && !auto
@@ -1091,6 +1149,10 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
 }
 
 const slotFile = get("slotFile");
+const folderFile = get("folderFiles");
+let pendingImport = [];
+let importGeneration = 0;
+
 function pickFiles(manual) {
   manualDestination = manual;
   slotFile.value = "";
@@ -1108,18 +1170,90 @@ get("quickCaptures").addEventListener("click", () => {
   if (link && !libraryBusy) pickFiles(false);
   else if (!link) showLibraryProgress("Conecte a GP-5 por USB para importar na pedaleira.");
 });
-slotFile.addEventListener("change", async () => {
-  const files = [...slotFile.files];
+
+async function classifyImportFile(file, kind) {
+  const extension = kind === "cab" ? /\.wav$/i : /\.nam$/i;
+  if (!extension.test(file.name)) return { file, ok: false, reason: `não é .${kind === "cab" ? "wav" : "nam"}` };
+  if (file.size > 32 * 1024 * 1024) return { file, ok: false, reason: "acima de 32 MB" };
+  if (kind === "cab") return { file, ok: true };
+  let text = "";
+  try {
+    text = await file.text();
+    validateNamA2(text);
+    return { file, ok: true };
+  } catch (error) {
+    return { file, ok: false, reason: namError(error, text) };
+  }
+}
+
+async function prepareImport(files) {
   if (!files.length) return;
+  const generation = ++importGeneration;
+  const kind = libraryTab;
+  const list = get("importList");
+  const summary = get("importSummary");
+  list.replaceChildren();
+  pendingImport = [];
+  summary.textContent = `Analisando ${files.length} arquivo(s)…`;
+  for (const [index, file] of files.entries()) {
+    const item = await classifyImportFile(file, kind);
+    if (generation !== importGeneration) return;
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = item.ok;
+    check.disabled = !item.ok;
+    item.check = check;
+    const name = document.createElement("span");
+    name.className = "import-name";
+    name.textContent = file.name;
+    name.title = file.webkitRelativePath || file.name;
+    const state = document.createElement("span");
+    state.className = item.ok ? "import-ok" : "import-bad";
+    state.textContent = item.ok ? (kind === "cab" ? "WAV ok" : "A2-Lite ok") : (item.reason || "incompatível");
+    const row = document.createElement("li");
+    row.append(check, name, state);
+    list.append(row);
+    pendingImport.push(item);
+    if (index % 5 === 0) {
+      summary.textContent = `Analisando ${index + 1}/${files.length}…`;
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  if (generation !== importGeneration) return;
+  const ok = pendingImport.filter(item => item.ok).length;
+  const free = Math.max(0, 30 - installed.filter(entry => entry.kind === kind).length);
+  summary.textContent = `${ok} de ${files.length} compatível(is) · ${free} slot(s) vazio(s) de 30` +
+    (ok > free ? ` · só ${free} cabem nesta leva` : "");
+  get("importConfirm").disabled = !link || libraryBusy;
+  get("importPreview").hidden = false;
+  get("importPreview").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+get("importCancel").addEventListener("click", () => {
+  importGeneration++;
+  pendingImport = [];
+  get("importPreview").hidden = true;
+  slotFile.value = "";
+  folderFile.value = "";
+});
+get("importConfirm").addEventListener("click", async () => {
+  importGeneration++;
+  const files = pendingImport.filter(item => item.ok && item.check.checked).map(item => item.file);
+  if (!files.length) { toast("Marque pelo menos um arquivo compatível."); return; }
+  get("importPreview").hidden = true;
   try {
     await sendFiles(files, manualDestination ? get("slotNumber").valueAsNumber : 1,
-      libraryTab, showLibraryProgress, !manualDestination);
+      libraryTab, showLibraryProgress, !manualDestination, false);
   } catch (error) {
     showLibraryProgress(error.message);
     toast(error.message);
   }
 });
-const folderFile = get("folderFiles");
+
+slotFile.addEventListener("change", async () => {
+  const files = [...slotFile.files];
+  if (files.length) await prepareImport(files);
+});
 get("folderPicker").addEventListener("click", () => {
   folderFile.value = "";
   folderFile.click();
@@ -1131,8 +1265,7 @@ folderFile.addEventListener("change", async () => {
     showLibraryProgress(`Nenhum arquivo ${libraryTab === "cab" ? "WAV" : "NAM"} na pasta escolhida.`);
     return;
   }
-  try { await sendFiles(files, 1, libraryTab, showLibraryProgress, true); }
-  catch (error) { showLibraryProgress(error.message); }
+  await prepareImport(files);
 });
 installCaptureBank((files, slot, progress) => sendFiles(files, slot, "tone", progress));
 
@@ -1202,3 +1335,7 @@ setInterval(() => {
 selectEffect(selectedBlock);
 setDisabled(true);
 setLibraryTab("tone");
+
+if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}

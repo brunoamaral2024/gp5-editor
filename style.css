@@ -136,6 +136,8 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .effect-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.4rem; padding:.55rem .75rem; border-bottom:1px solid var(--line); }
 .effect-heading h2 { font-size:1.05rem; overflow-wrap:anywhere; }
 .effect-heading button[aria-pressed="true"] { color:var(--green); }
+.save-state { margin-left:auto; font-size:.78rem; color:var(--green); min-height:1em; }
+#saveScene { min-height:36px; padding:.25rem .55rem; font-size:.82rem; }
 .effect-panel form { padding:.65rem; overflow:auto; max-height:clamp(25rem,65dvh,39rem); }
 .effect-panel fieldset { border:0; background:transparent; margin:0; }
 .effect-panel legend { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
@@ -249,7 +251,20 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .pedal-visor .visor-top,.pedal-visor .visor-bottom { display:flex; justify-content:space-between; gap:.8rem; font-size:.7rem; letter-spacing:.1em; color:#6f9c85; }
 .pedal-visor strong { font-size:.98rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pedal-visor .visor-bottom { color:var(--accent); }
+.visor-arrows { display:flex; gap:.25rem; }
+.visor-arrows button { min-height:26px; padding:0 .4rem; border:1px solid #2b3a33; border-radius:.35rem; background:#101a15; color:var(--green); font-size:.75rem; }
+.visor-arrows button:disabled { opacity:.4; }
 @media (max-width:475px) { .pedal-visor { flex-basis:100%; max-width:none; } }
+
+/* Import confirmation list */
+#importPreview { margin:.8rem 0; }
+.import-list { display:grid; gap:.2rem; margin:0; padding:0; max-height:16rem; overflow:auto; list-style:none; }
+.import-list li { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:.55rem; padding:.3rem .2rem; border-top:1px solid var(--line); }
+.import-list input[type="checkbox"] { width:1.15rem; height:1.15rem; }
+.import-list .import-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.9rem; }
+.import-list .import-bad { color:#ff9b9b; }
+.import-list .import-reason { color:var(--muted); font-size:.78rem; max-width:14rem; overflow-wrap:anywhere; }
+.import-list .import-ok { color:var(--green); font-size:.78rem; }
 
 .midi-codes { margin-top:.7rem; }
 .midi-codes h3 { font-size:.95rem; margin:.8rem 0 .3rem; }

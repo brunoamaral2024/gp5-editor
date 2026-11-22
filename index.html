@@ -4,9 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23ffc49b'/%3E%3C/svg%3E">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#151820">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
-  <link rel="stylesheet" href="./style.css?v=import4">
-  <script type="module" src="./editor.js?v=import6"></script>
+  <link rel="stylesheet" href="./style.css?v=import6">
+  <script type="module" src="./editor.js?v=import9"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -23,7 +26,7 @@
     <section data-view-panel="board">
     <div class="live-strip">
       <div id="pedalVisor" class="pedal-visor" role="status" aria-live="polite">
-        <span class="visor-top"><span id="visorBank">BANCO --</span><span id="visorSlot">SLOT --</span></span>
+        <span class="visor-top"><span id="visorBank">BANCO --</span><span id="visorSlot">SLOT --</span><span class="visor-arrows"><button id="visorPrev" type="button" aria-label="Banco anterior" disabled>◀</button><button id="visorNext" type="button" aria-label="Próximo banco" disabled>▶</button></span></span>
         <strong id="visorName">GP-5 desconectada</strong>
         <span class="visor-bottom"><span id="visorScene">—</span><span id="visorState"></span></span>
       </div>
@@ -115,6 +118,8 @@
     <section id="effectPanel" class="effect-panel" aria-labelledby="effectTitle">
       <div class="effect-heading">
         <h2 id="effectTitle">Amplificador</h2>
+        <span id="saveState" class="save-state" role="status" aria-live="polite"></span>
+        <button id="saveScene" type="button" class="secondary">Salvar cena</button>
         <button id="toggleSelectedEffect" class="secondary" type="button" aria-label="Ligar ou desligar amplificador" aria-pressed="false" disabled>Desligado</button>
       </div>
       <form id="controls">
@@ -458,6 +463,17 @@
           </div>
         </fieldset>
       </div>
+      <fieldset id="importPreview" hidden>
+        <legend>Confirmar importação</legend>
+        <div class="tone">
+          <p id="importSummary" class="note"></p>
+          <ul id="importList" class="import-list"></ul>
+          <div class="limits">
+            <button id="importConfirm" type="button">Importar selecionados</button>
+            <button id="importCancel" type="button" class="secondary">Cancelar</button>
+          </div>
+        </div>
+      </fieldset>
       <details class="utility" data-library-panel="tone">
     <summary>Banco de capturas do navegador</summary>
     <fieldset>

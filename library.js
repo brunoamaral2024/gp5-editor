@@ -206,9 +206,16 @@ const NAM_ERRORS = [
   [/not a NAM capture/i, "o arquivo não é uma captura NAM"],
 ];
 
-export function namError(error) {
+export function namError(error, text = "") {
   const message = String(error?.message ?? error);
-  for (const [pattern, text] of NAM_ERRORS) if (pattern.test(message)) return text;
+  if (/not an A2-Lite model|no width-3 A2-Lite model|no A2-Lite part/i.test(message)) {
+    let architecture;
+    try { architecture = JSON.parse(text)?.architecture; } catch { /* keep the generic text */ }
+    if (architecture === "WaveNet")
+      return "captura NAM A1 (formato antigo): a GP-5 só toca A2-Lite. Baixe ou exporte a versão A2.";
+    return "captura A2 sem A2-Lite (a GP-5 só toca NAM A2-Lite)";
+  }
+  for (const [pattern, translated] of NAM_ERRORS) if (pattern.test(message)) return translated;
   return message;
 }
 
@@ -219,8 +226,9 @@ export async function prepareSlotFile(file, slot) {
   const label = file.name.replace(/\.[^.]+$/, "");
   let data;
   if (capture) {
-    try { data = convertNam(await file.text(), label).blob; }
-    catch (error) { throw new Error(namError(error)); }
+    const text = await file.text();
+    try { data = convertNam(text, label).blob; }
+    catch (error) { throw new Error(namError(error, text)); }
   } else if (/\.wav$/i.test(file.name)) {
     const { samples } = await decodeIr(new Uint8Array(await file.arrayBuffer()));
     data = makeCabFile(samples, label);
