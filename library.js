@@ -200,13 +200,13 @@ export async function restoreLibrary(link, backup, heartbeat, progress) {
 }
 
 const NAM_ERRORS = [
-  [/no A2-Lite part|no width-3 A2-Lite model/i, "captura sem modelo A2-Lite (a GP-5 só toca NAM A2-Lite)"],
-  [/not a NAM A2 capture/i, "não é uma captura NAM A2"],
+  [/no A2-Lite part|no width-3 A2-Lite model|not an A2-Lite model/i, "captura A2 sem A2-Lite (a GP-5 só toca NAM A2-Lite)"],
+  [/not a NAM A2 capture/i, "não é uma captura NAM A2 (capturas A1 não funcionam na GP-5)"],
   [/must be made at 48 kHz/i, "a captura precisa ser feita em 48 kHz"],
   [/not a NAM capture/i, "o arquivo não é uma captura NAM"],
 ];
 
-function namError(error) {
+export function namError(error) {
   const message = String(error?.message ?? error);
   for (const [pattern, text] of NAM_ERRORS) if (pattern.test(message)) return text;
   return message;

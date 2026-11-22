@@ -6,7 +6,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23ffc49b'/%3E%3C/svg%3E">
   <title>GP-5 · Editor de timbres</title>
   <link rel="stylesheet" href="./style.css?v=import4">
-  <script type="module" src="./editor.js?v=import5"></script>
+  <script type="module" src="./editor.js?v=import6"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -448,7 +448,7 @@
             <button id="slotPicker" type="button">Escolher capturas .nam</button>
             <button id="folderPicker" type="button" class="secondary">Escolher pasta</button>
             <input id="folderFiles" class="file-input" type="file" webkitdirectory multiple>
-            <p class="note">Os arquivos selecionados vão direto para slots livres da GP-5. No computador, <strong>Escolher pasta</strong> lê uma pasta inteira; no celular, use <strong>Escolher capturas</strong> e selecione os .nam.</p>
+            <p class="note">Os arquivos selecionados vão direto para slots livres da GP-5. No computador, <strong>Escolher pasta</strong> lê uma pasta inteira; no celular, use <strong>Escolher capturas</strong> e selecione os .nam. Só entram capturas NAM <strong>A2-Lite a 48 kHz</strong> — A1 e A2 sem A2-Lite são recusadas com o motivo.</p>
             <details id="manualSlot">
               <summary>Escolher slot manualmente</summary>
               <label for="slotNumber">Slot de destino</label>

@@ -1013,9 +1013,8 @@ async function transferLibrary(mode, operation, progress = showLibraryProgress) 
       acquired = true;
       result = await operation(() => lock(mode));
     } catch (error) {
-      const prefix = acquired && mode === 2 ? "Transferência interrompida. " : "";
-      progress(prefix + error.message);
-      toast(prefix + error.message);
+      progress(error.message);
+      toast(error.message);
     } finally {
       if (acquired) {
         try { await lock(0); }
