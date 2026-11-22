@@ -29,6 +29,7 @@ const setDisabled = (disabled) => {
   for (const id of ["chainBypass", "tunerToggle", "mapVolume", "driveOnly"]) get(id).disabled = disabled;
   get("bankSendFiles").disabled = disabled;
   get("bankSend").disabled = disabled;
+  get("boardFootMode").disabled = disabled;
   showValues();
 };
 get("controls").addEventListener("submit", (event) => event.preventDefault());
@@ -417,6 +418,20 @@ async function request(op, ...payload) {
   throw new Error("A GP-5 não respondeu. Confira o cabo e feche outros editores.");
 }
 
+function renderVisor() {
+  const connected = Boolean(link);
+  const slot = connected ? Number(current[7] ?? 0) : 0;
+  const name = slot === 0
+    ? "Captura interna"
+    : installed.find(entry => entry.kind === "tone" && entry.slot === slot)?.name ?? `Slot ${String(slot).padStart(2, "0")}`;
+  const mode = connected && liveTools ? Number(current[bypassId] ?? 0) : 0;
+  get("visorBank").textContent = slot ? `BANCO ${String(Math.ceil(slot / 4)).padStart(2, "0")}` : "BANCO --";
+  get("visorSlot").textContent = slot ? `SLOT ${String(slot).padStart(2, "0")}` : "SLOT --";
+  get("visorName").textContent = connected ? name : "GP-5 desconectada";
+  get("visorScene").textContent = connected ? ["BASE", "SOLO", "AMBIENTE", "CENA 4"][Number(current[27] ?? 0)] ?? "—" : "—";
+  get("visorState").textContent = !connected ? "" : mode === 1 ? "BYPASS" : mode === 2 ? "SÓ DRIVE" : "CADEIA";
+}
+
 function showValues() {
   const bpm = get("bpm").valueAsNumber;
   const ratio = ratios[Number(get("division").value)];
@@ -455,6 +470,7 @@ function showValues() {
   get("eq7").parentElement.hidden = eqMode !== 2;
   for (const button of document.querySelectorAll("[data-scene]"))
     button.setAttribute("aria-pressed", String(button.dataset.scene === get("scene").value));
+  if (get("boardFootMode") !== document.activeElement) get("boardFootMode").value = String(current[28] ?? 0);
   get("midiPrograms").textContent = current[28] === 2
     ? "PC 0 a 29 selecionam os presets NAM 01 a 30."
     : "PC 0, 1 e 2 selecionam Base, Solo e Ambiente.";
@@ -493,6 +509,7 @@ function showValues() {
       selectedToggle.textContent = enabled ? "Ligado" : "Desligado";
     }
   }
+  renderVisor();
 }
 
 const movable = ["eq", null, "mod", "delay", "cloud", "volumePedal", "pitch"];
@@ -546,6 +563,13 @@ function selectScene(index) {
 }
 for (const button of document.querySelectorAll("[data-scene]"))
   button.addEventListener("click", () => selectScene(Number(button.dataset.scene)));
+
+get("boardFootMode").addEventListener("change", () => {
+  if (!link || libraryBusy) return;
+  get("sceneMode").value = get("boardFootMode").value;
+  get("sceneMode").dispatchEvent(new Event("change"));
+  toast(`Foot: ${get("boardFootMode").selectedOptions[0].textContent}`);
+});
 
 function syncSceneButtons(max) {
   const container = get("sceneButtons");
@@ -729,6 +753,7 @@ connect.addEventListener("click", async () => {
     }
     const footDescriptor = await request(0x12, 28, 0);
     get("sceneMode").querySelector('option[value="2"]').disabled = footDescriptor[2] !== 1 || footDescriptor[11] < 2;
+    get("boardFootMode").querySelector('option[value="2"]').disabled = get("sceneMode").querySelector('option[value="2"]').disabled;
     const sceneDescriptor = await request(0x12, 27, 0).catch(() => null);
     if (sceneDescriptor?.[2] === 1) syncSceneButtons(sceneDescriptor[11] | sceneDescriptor[12] << 8);
     const bypassDescriptor = await request(0x12, bypassId, 0);

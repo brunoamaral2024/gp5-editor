@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23ffc49b'/%3E%3C/svg%3E">
   <title>GP-5 · Editor de timbres</title>
-  <link rel="stylesheet" href="./style.css?v=import3">
-  <script type="module" src="./editor.js?v=import4"></script>
+  <link rel="stylesheet" href="./style.css?v=import4">
+  <script type="module" src="./editor.js?v=import5"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -22,6 +22,11 @@
     </nav>
     <section data-view-panel="board">
     <div class="live-strip">
+      <div id="pedalVisor" class="pedal-visor" role="status" aria-live="polite">
+        <span class="visor-top"><span id="visorBank">BANCO --</span><span id="visorSlot">SLOT --</span></span>
+        <strong id="visorName">GP-5 desconectada</strong>
+        <span class="visor-bottom"><span id="visorScene">—</span><span id="visorState"></span></span>
+      </div>
       <fieldset id="presetBar" class="preset-bar" disabled>
         <legend>Preset NAM</legend>
         <select id="quickPreset" aria-label="Selecionar preset na GP-5"><option value="0">Captura interna</option></select>
@@ -34,6 +39,13 @@
         <button type="button" data-scene="2" aria-pressed="false">Ambiente</button>
       </div>
     </fieldset>
+    <label class="foot-mode" for="boardFootMode">Foot
+      <select id="boardFootMode">
+        <option value="0">Stomp</option>
+        <option value="1">Cenas</option>
+        <option value="2" disabled>Preset</option>
+      </select>
+    </label>
     <div class="board-tools" id="studioTools" hidden>
       <button id="chainBypass" type="button" class="secondary" aria-pressed="false">Ativar timbre</button>
       <button id="tunerToggle" type="button" class="secondary" aria-controls="tunerPanel" aria-expanded="false">Afinador</button>
