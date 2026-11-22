@@ -50,8 +50,19 @@ function selectEffect(block) {
 for (const block of blocks)
   block.querySelector("[data-effect-edit]").addEventListener("click", () => {
     selectEffect(block);
+    if (window.matchMedia("(max-width: 700px)").matches)
+      get("effectPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     toggleEffect(block.dataset.block);
   });
+
+const headerElement = document.querySelector("header");
+function syncHeaderHeight() {
+  if (headerElement) document.documentElement.style.setProperty("--header-h", `${Math.ceil(headerElement.getBoundingClientRect().height)}px`);
+}
+if (headerElement && "ResizeObserver" in window) {
+  new ResizeObserver(syncHeaderHeight).observe(headerElement);
+  syncHeaderHeight();
+}
 
 selectedToggle.addEventListener("click", () => toggleEffect(selectedBlock.dataset.block));
 
@@ -979,6 +990,7 @@ async function transferLibrary(mode, operation, progress = showLibraryProgress) 
     } catch (error) {
       const prefix = acquired && mode === 2 ? "Transferência interrompida. " : "";
       progress(prefix + error.message);
+      toast(prefix + error.message);
     } finally {
       if (acquired) {
         try { await lock(0); }
@@ -1018,10 +1030,13 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
   if (files.some(file => !extension.test(file.name))) throw new Error(`Selecione apenas arquivos ${format}.`);
   if (files.length === 1 && !auto && !confirm(`Gravar no slot ${slot}? O arquivo nesse slot será substituído.`)) return;
   await transferLibrary(2, async (heartbeat) => {
-    progress(`Verificando ${files.length} arquivo(s) ${format}…`);
-    const entries = files.length === 1 && !auto
-      ? [await prepareSlotFile(files[0], slot)]
-      : await planSlotBatch(link, files, slot, kind);
+    progress(`Preparando ${files.length} arquivo(s) ${format}…`);
+    const plan = files.length === 1 && !auto
+      ? { entries: [await prepareSlotFile(files[0], slot)], rejected: [] }
+      : await planSlotBatch(link, files, slot, kind, progress);
+    const entries = plan.entries;
+    const used = entries.map(entry => Number(entry.name.slice(-2))).join(", ");
+    progress(`Gravando ${entries.length} arquivo(s) nos slots ${used}…`);
     const written = [];
     try {
       for (const [i, entry] of entries.entries()) {
@@ -1034,16 +1049,19 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
     }
     return async () => {
       const confirmed = slotsRead && written.every(slot => installed.some(entry => entry.kind === kind && entry.slot === Number(slot)));
+      const skipped = plan.rejected.length
+        ? ` Ignorados: ${plan.rejected.slice(0, 3).map(item => `${item.name} (${item.message})`).join("; ")}${plan.rejected.length > 3 ? "…" : ""}.`
+        : "";
       if (confirmed && extendedControls) {
         const reply = await request(0x11, kind === "tone" ? 74 : 76, 0, 2);
         if (reply[2] === 2 && reply.length >= 7) {
           const mask = new DataView(reply.buffer, reply.byteOffset + 3, 4).getUint32(0, true);
           const rejected = written.filter(slot => !(mask & (1 << (Number(slot) - 1))));
-          if (rejected.length) return `A GP-5 leu a gravação, mas recusou o conteúdo dos slots ${rejected.join(", ")}. Confira se o formato do arquivo é compatível.`;
+          if (rejected.length) return `A GP-5 leu a gravação, mas recusou o conteúdo dos slots ${rejected.join(", ")}. Confira se o formato do arquivo é compatível.${skipped}`;
         }
       }
-      return confirmed ? `${written.length} arquivo(s) gravado(s) nos slots ${written.join(", ")}. Toque em Usar para carregar.`
-        : "A gravação respondeu, mas a leitura final dos slots não confirmou os arquivos. Toque em Atualizar para conferir.";
+      return (confirmed ? `${written.length} arquivo(s) gravado(s) nos slots ${written.join(", ")}. Toque em Usar para carregar.`
+        : "A gravação respondeu, mas a leitura final dos slots não confirmou os arquivos. Toque em Atualizar para conferir.") + skipped;
     };
   }, progress);
 }
@@ -1052,6 +1070,9 @@ const slotFile = get("slotFile");
 function pickFiles(manual) {
   manualDestination = manual;
   slotFile.value = "";
+  if (typeof slotFile.showPicker === "function") {
+    try { slotFile.showPicker(); return; } catch { /* browser refused: use the plain click */ }
+  }
   slotFile.click();
 }
 get("slotPicker").addEventListener("click", () => pickFiles(false));
@@ -1059,6 +1080,7 @@ get("sendSlot").addEventListener("click", () => pickFiles(true));
 get("quickCaptures").addEventListener("click", () => {
   setLibraryTab("tone");
   setView("library");
+  window.scrollTo({ top: 0, behavior: "smooth" });
   if (link && !libraryBusy) pickFiles(false);
   else if (!link) showLibraryProgress("Conecte a GP-5 por USB para importar na pedaleira.");
 });
@@ -1068,7 +1090,10 @@ slotFile.addEventListener("change", async () => {
   try {
     await sendFiles(files, manualDestination ? get("slotNumber").valueAsNumber : 1,
       libraryTab, showLibraryProgress, !manualDestination);
-  } catch (error) { showLibraryProgress(error.message); }
+  } catch (error) {
+    showLibraryProgress(error.message);
+    toast(error.message);
+  }
 });
 const folderFile = get("folderFiles");
 get("folderPicker").addEventListener("click", () => {

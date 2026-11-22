@@ -215,22 +215,33 @@ export async function prepareSlotFile(file, slot) {
   return { name, data };
 }
 
-export async function planSlotBatch(link, files, firstSlot, kind) {
+export async function planSlotBatch(link, files, firstSlot, kind, progress = () => {}) {
   const directory = await listFiles(link);
   const occupied = new Set(directory.files.filter(ownFile).map(file => file.name));
   const slots = Array.from({length: 31 - firstSlot}, (_, i) => firstSlot + i)
     .filter(slot => !occupied.has(`${kind}-${String(slot).padStart(2, "0")}`));
-  if (slots.length < files.length)
-    throw new Error(`Há apenas ${slots.length} slots livres desde o número ${firstSlot}.`);
-  const entries = [];
+  const entries = [], rejected = [];
   for (const [index, file] of files.entries()) {
-    try { entries.push(await prepareSlotFile(file, slots[index])); }
-    catch (error) { throw new Error(`${file.name} · ${error.message}`); }
+    progress(`Convertendo ${index + 1}/${files.length}: ${file.name}…`);
+    if (entries.length >= slots.length) {
+      rejected.push({ name: file.name, message: "não há slot livre" });
+      continue;
+    }
+    try {
+      entries.push(await prepareSlotFile(file, slots[entries.length]));
+    } catch (error) {
+      rejected.push({ name: file.name, message: error.message });
+    }
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  if (!entries.length) {
+    const details = rejected.slice(0, 4).map(item => `${item.name}: ${item.message}`).join(" · ");
+    throw new Error(`Nenhum arquivo compatível. ${details}`);
   }
   const sectors = entries.reduce((total, entry) => total + sectorsFor(entry.data.length), 0);
   if (sectors > directory.freeSectors)
-    throw new Error(`Memória insuficiente para ${entries.length} arquivos. Nenhum arquivo foi gravado.`);
-  return entries;
+    throw new Error(`Memória insuficiente: ${entries.length} arquivo(s) precisam de ${sectors} setores e há ${directory.freeSectors} livres. Nada foi gravado.`);
+  return { entries, rejected };
 }
 
 export async function sendSlotFile(link, { name, data }, progress) {

@@ -226,9 +226,34 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .scene-buttons { grid-template-columns:repeat(auto-fit,minmax(0,1fr)); }
 .board-head #quickGlobal { min-height:34px; padding:.2rem .55rem; font-size:.85rem; }
 
+.file-input { position:absolute; width:1px; height:1px; padding:0; border:0; opacity:0; overflow:hidden; pointer-events:none; }
+@media (pointer: coarse) { #folderPicker { display:none; } }
+
 .midi-codes { margin-top:.7rem; }
 .midi-codes h3 { font-size:.95rem; margin:.8rem 0 .3rem; }
 .midi-codes table { width:100%; border-collapse:collapse; font-size:.88rem; }
 .midi-codes th, .midi-codes td { padding:.32rem .45rem; border-bottom:1px solid var(--line); text-align:left; }
 .midi-codes th { color:var(--muted); font-weight:650; }
 .midi-codes td:last-child { color:var(--accent); font-family:ui-monospace,Consolas,monospace; white-space:nowrap; }
+
+/* Phone layout: the tabs stay under the header and the effect panel goes below the board. */
+@media (max-width:700px) {
+  .workspace-tabs {
+    position:sticky;
+    top:var(--header-h, 3.7rem);
+    z-index:1;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+    margin-top:.45rem;
+    padding-top:.35rem;
+    padding-bottom:.4rem;
+    background:var(--base);
+  }
+  .workspace-tabs::-webkit-scrollbar { display:none; }
+  .workspace-tabs button { flex:0 0 auto; white-space:nowrap; }
+  .board-workspace { grid-template-columns:1fr; }
+  .board-head { flex-wrap:wrap; }
+  .effect-panel { scroll-margin-top:calc(var(--header-h, 3.7rem) + 3.4rem); }
+  .tuner-panel { max-width:none; }
+}
