@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23ffc49b'/%3E%3C/svg%3E">
+  <title>GP-5 · Editor de timbres</title>
+  <link rel="stylesheet" href="./style.css?v=monitor">
+  <script type="module" src="./editor.js?v=pedal-toggle"></script>
+</head>
+<body>
+  <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
+  <main>
+    <h1>Editor de timbres</h1>
+    <p id="status" role="status">Conecte a GP-5 por USB com o firmware GP-5 NAM Studio.</p>
+    <nav class="workspace-tabs" aria-label="Áreas do editor">
+      <button type="button" data-view="board" aria-pressed="true">Pedalboard</button>
+      <button type="button" data-view="library" aria-pressed="false">Biblioteca</button>
+      <button type="button" data-view="global" aria-pressed="false">Global</button>
+      <button type="button" data-view="midi" aria-pressed="false">MIDI</button>
+      <button id="quickCaptures" class="secondary" type="button">Importar<span class="import-caption"> capturas</span></button>
+    </nav>
+    <section data-view-panel="board">
+    <div class="live-strip">
+      <fieldset id="presetBar" class="preset-bar" disabled>
+        <legend>Preset NAM</legend>
+        <select id="quickPreset" aria-label="Selecionar preset na GP-5"><option value="0">Captura interna</option></select>
+      </fieldset>
+    <fieldset class="scene-bar" id="sceneBar" disabled>
+      <legend>Cena do timbre</legend>
+      <div class="scene-buttons" id="sceneButtons">
+        <button type="button" data-scene="0" aria-pressed="true">Base</button>
+        <button type="button" data-scene="1" aria-pressed="false">Solo</button>
+        <button type="button" data-scene="2" aria-pressed="false">Ambiente</button>
+      </div>
+    </fieldset>
+    <div class="board-tools" id="studioTools" hidden>
+      <button id="chainBypass" type="button" class="secondary" aria-pressed="false">Ativar timbre</button>
+      <button id="tunerToggle" type="button" class="secondary" aria-controls="tunerPanel" aria-expanded="false">Afinador</button>
+    </div>
+    <section id="tunerPanel" class="tuner-panel" aria-label="Afinador cromático" hidden>
+      <strong id="tunerNote">–</strong>
+      <div><meter id="tunerMeter" min="-50" max="50" low="-4" high="4" optimum="0" value="0"></meter>
+        <p id="tunerReading" class="note">Toque uma corda por vez. Saída silenciada.</p></div>
+    </section>
+    </div>
+    <div class="board-workspace">
+    <div class="board">
+      <div class="board-head"><h2>Pedalboard</h2><button id="quickGlobal" class="secondary" type="button">EQ global</button></div>
+    <nav id="chain" class="chain" aria-label="Cadeia de sinal">
+      <div class="pedal-card" data-block="drive" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Drive" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art extra e0"></span><span class="pedal-name">Drive</span><span class="pedal-short" aria-hidden="true">Drive</span><small>Boost, OD, distorção e fuzz</small></button>
+      </div>
+      <div class="pedal-card" data-block="amp" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar amplificador" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p0"></span><span class="pedal-name">Amplificador</span><span class="pedal-short" aria-hidden="true">Amp</span><small>NAM e Clean</small></button>
+      </div>
+      <div class="pedal-card" data-block="gatePanel" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Noise Gate" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p1"></span><span class="pedal-name">Noise Gate</span><span class="pedal-short" aria-hidden="true">Gate</span><small>Ruído</small></button>
+      </div>
+      <div class="pedal-card" data-block="compressor" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Compressor" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p2"></span><span class="pedal-name">Compressor</span><span class="pedal-short" aria-hidden="true">Comp</span><small>Dinâmica</small></button>
+      </div>
+      <div class="pedal-card" data-block="cab" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Caixa" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p3"></span><span class="pedal-name">Caixa</span><span class="pedal-short" aria-hidden="true">Caixa</span><small>Resposta a impulso</small></button>
+      </div>
+      <div class="pedal-card" data-block="eq" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar EQ" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p4"></span><span class="pedal-name">EQ</span><span class="pedal-short" aria-hidden="true">EQ</span><small>3, 6 ou 7 bandas</small></button>
+      </div>
+      <div class="pedal-card" data-block="mod" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Modulação" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p5"></span><span class="pedal-name">Modulação</span><span class="pedal-short" aria-hidden="true">Mod</span><small>Chorus e mais</small></button>
+      </div>
+      <div class="pedal-card" data-block="delay" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Delay" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p6"></span><span class="pedal-name">Delay</span><span class="pedal-short" aria-hidden="true">Delay</span><small>Tap Tempo</small></button>
+      </div>
+      <div class="pedal-card" data-block="cloud" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Reverb" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art photo p7"></span><span class="pedal-name">Reverb</span><span class="pedal-short" aria-hidden="true">Reverb</span><small>Cloud e mais</small></button>
+      </div>
+      <div class="pedal-card" data-block="volumePedal" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar pedal de volume" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art volume-art"></span><span class="pedal-name">Pedal de volume</span><span class="pedal-short" aria-hidden="true">Vol</span><small>Expressão MIDI</small></button>
+      </div>
+      <div class="pedal-card" data-block="pitch" data-selected="false">
+        <button class="pedal-toggle" type="button" data-effect-edit aria-label="Editar Pitch Shifter" aria-controls="effectPanel" aria-pressed="false"><span aria-hidden="true" class="pedal-art extra e1"></span><span class="pedal-name">Pitch Shifter</span><span class="pedal-short" aria-hidden="true">Pitch</span><small>Semitons</small></button>
+      </div>
+    </nav>
+    <fieldset id="tempoControls" class="tempo-controls" disabled>
+      <legend>Andamento</legend>
+      <div class="tempo-grid">
+        <label for="bpm">BPM</label>
+        <input id="bpm" type="number" required min="45" max="240" value="120">
+        <button id="tapTempo" class="secondary" type="button">Tap</button>
+        <label for="division">Subdivisão</label>
+        <select id="division">
+          <option value="0">1/4</option>
+          <option value="1">1/8</option>
+          <option value="2">1/8 pontuada</option>
+          <option value="3">1/8 tercina</option>
+          <option value="4">1/16</option>
+        </select>
+        <output id="interval" for="bpm division">500 ms por repetição</output>
+      </div>
+    </fieldset>
+    </div>
+    <section id="effectPanel" class="effect-panel" aria-labelledby="effectTitle">
+      <div class="effect-heading">
+        <h2 id="effectTitle">Amplificador</h2>
+        <button id="toggleSelectedEffect" class="secondary" type="button" aria-label="Ligar ou desligar amplificador" aria-pressed="false" disabled>Desligado</button>
+      </div>
+      <form id="controls">
+<div id="orderControls" hidden><button id="moveLeft" type="button">Mover antes</button><button id="moveRight" type="button">Mover depois</button></div>
+    <fieldset id="volumePedal" data-panel hidden disabled><legend>Pedal de volume</legend><div class="tone">
+      <label class="switch" for="volumeOn">Pedal ligado <input id="volumeOn" type="checkbox"></label>
+      <label for="volumeValue">Nível por cena <output id="volumeValueValue">100%</output></label>
+      <input id="volumeValue" type="range" min="0" max="100" value="100" data-unit="%">
+      <button id="mapVolume" class="secondary" type="button" disabled>Configurar pedal de expressão</button>
+    </div></fieldset><fieldset id="drive" data-panel hidden disabled><legend>Drive</legend><div class="tone"><label for="driveMode">Tipo de drive</label><select id="driveMode"><option value="0">Desligado</option><option value="1">Overdrive</option><option value="2">Distorção</option><option value="3">Kinky Boost · EP</option><option value="4">Deranged Master · Treble</option><option value="5">Minotaur · Mid Boost</option><option value="6">Teemah! · Transparente</option><option value="7">Heir Apparent · Royal</option><option value="8">Tone Sovereign · Royal duplo</option><option value="9">Prize Drive · Nashville</option><option value="10">Pillars · Green aberto</option><option value="11">Vital Boost · MOSFET</option><option value="12">Scream 808</option><option value="13">Stupor OD · Assimétrico</option><option value="14">Alpaca Rouge · CMOS</option><option value="15">Compulsive Drive · Crunch</option><option value="16">Dhyana Drive · Smooth</option><option value="17">Valve Driver</option><option value="18">Top Secret OD · 250</option><option value="19">Horizon Drive · Metal</option><option value="20">Deez One Vintage</option><option value="21">Deez One Mod</option><option value="22">Hedgehog D9</option><option value="23">Vermin Dist</option><option value="24">Ratatouille Dist</option><option value="25">Vital Dist · Oitava</option><option value="26">KWB · Defined Dist</option><option value="27">Legendary Drive</option><option value="28">Swedish Chainsaw</option><option value="29">Arbitrator Fuzz</option><option value="30">Pocket Fuzz</option><option value="31">Bighead Fuzz</option><option value="32">Yellow OD · OD-1</option><option value="33">Riot Dist · Suhr-style</option><option value="34">Honey OD · Sweet Honey-style</option><option value="35">BB Preamp · Xotic-style</option><option value="36">Micro Boost</option></select>
+<div id="driveKnobs" class="eq-controls" hidden>
+  <label for="driveGain">Ganho do drive <output id="driveGainValue">0 dB</output></label>
+  <input id="driveGain" type="range" min="-12" max="12" value="0" data-unit=" dB">
+  <label for="driveBass">Graves <output id="driveBassValue">0 dB</output></label>
+  <input id="driveBass" type="range" min="-12" max="12" value="0" data-unit=" dB">
+  <label for="driveMid">Médios <output id="driveMidValue">0 dB</output></label>
+  <input id="driveMid" type="range" min="-12" max="12" value="0" data-unit=" dB">
+  <label for="driveTreble">Agudos <output id="driveTrebleValue">0 dB</output></label>
+  <input id="driveTreble" type="range" min="-12" max="12" value="0" data-unit=" dB">
+  <label for="driveTone">Tone <output id="driveToneValue">0 dB</output></label>
+  <input id="driveTone" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div>
+<button id="driveOnly" type="button" class="secondary" aria-pressed="false" hidden>Só o drive</button>
+</div></fieldset>
+<fieldset id="pitch" data-panel hidden disabled><legend>Pitch Shifter</legend><div class="tone"><label class="switch" for="pitchOn">Pitch ligado <input type="checkbox" id="pitchOn"></label><label for="pitchShift">Voz A · Semitons <output id="pitchShiftValue">0 st</output></label>
+<input id="pitchShift" type="range" min="-12" max="12" value="0" data-unit=" st">
+<div id="dualPitchControls" class="eq-controls" hidden>
+  <label class="switch" for="pitchDual">Duas vozes <input id="pitchDual" type="checkbox"></label>
+  <div id="pitchSecondRow" class="eq-controls" hidden>
+    <label for="pitchSecond">Voz B · Semitons <output id="pitchSecondValue">12 st</output></label>
+    <input id="pitchSecond" type="range" min="-12" max="12" value="12" data-unit=" st">
+  </div>
+</div>
+<label for="pitchMix">Mix <output id="pitchMixValue">50%</output></label>
+<input id="pitchMix" type="range" min="0" max="100" value="50" data-unit="%">
+</div></fieldset>
+
+
+
+      <fieldset id="gatePanel" data-panel hidden disabled>
+        <legend>Noise Gate</legend>
+        <div class="tone">
+          <label for="gate">Limiar <output id="gateValue" for="gate">Off</output></label>
+          <input id="gate" type="range" min="0" max="61" value="0">
+        </div>
+      </fieldset>
+      <fieldset id="compressor" data-panel hidden disabled>
+        <legend>Compressor</legend>
+        <div class="tone">
+          <label class="switch" for="compEnabled">Compressor ligado <input id="compEnabled" type="checkbox"></label>
+          <label for="compThreshold">Limiar <output id="compThresholdValue">−18 dBFS</output></label>
+          <input id="compThreshold" type="range" min="-48" max="0" value="-18">
+          <label for="compRatio">Ratio <output id="compRatioValue">4:1</output></label>
+          <input id="compRatio" type="range" min="2" max="8" value="4">
+          <label for="compGain">Ganho de compensação <output id="compGainValue">0 dB</output></label>
+          <input id="compGain" type="range" min="0" max="6" value="0">
+        </div>
+      </fieldset>
+      <fieldset id="amp" data-panel hidden disabled>
+        <legend>Amplificador</legend>
+        <div class="amp-layout">
+          <div class="amp-model">
+            <span aria-hidden="true" class="pedal-art photo p0"></span>
+            <label for="ampVoice">Modelo</label>
+            <select id="ampVoice">
+              <option value="0">Captura NAM</option><option value="1">Deluxe Reverb ’65</option>
+              <option value="2">Twin Reverb ’65</option><option value="3">Princeton Reverb</option>
+              <option value="4">British AC</option><option value="5">Jazz Clean</option><option value="6">Studio Clean</option>
+            </select>
+            <div id="capturePicker" class="control-group">
+              <label for="capture">Captura da GP-5</label>
+              <select id="capture"><option value="0">Captura interna</option></select>
+              <button type="button" id="openCaptures" class="secondary">Gerenciar capturas</button>
+            </div>
+          </div>
+          <div class="amp-controls">
+            <p id="ampOutputNote" class="note" role="status" hidden></p>
+            <button id="activateAmp" class="secondary" type="button" hidden>Ativar amplificador</button>
+            <label for="ampGain">Ganho de entrada <output id="ampGainValue">0 dB</output></label>
+            <input id="ampGain" type="range" min="-12" max="12" value="0" data-unit=" dB">
+            <label for="ampLevel">Nível de saída <output id="ampLevelValue">0 dB</output></label>
+            <input id="ampLevel" type="range" min="-12" max="12" value="0" data-unit=" dB">
+            <label for="ampTone">Tone <output id="ampToneValue">0 dB</output></label>
+            <input id="ampTone" type="range" min="-8" max="7" value="0" data-unit=" dB">
+          </div>
+        </div>
+      </fieldset>
+      <fieldset id="cab" data-panel hidden disabled>
+        <legend>Caixa</legend>
+        <div class="tone">
+          <label class="switch" for="cabEnabled">IR ligado <input id="cabEnabled" type="checkbox"></label>
+          <label for="ir">Slot de IR <small>0 = nenhum</small></label>
+          <select id="ir"><option value="0">Nenhum IR</option></select>
+          <button type="button" id="openIrs" class="secondary">Gerenciar IRs</button>
+        </div>
+      </fieldset>
+      <fieldset id="eq" data-panel hidden disabled>
+        <legend>Equalizador</legend>
+        <div class="tone">
+<label for="eqMode">Tipo de equalizador</label><select id="eqMode"><option value="0">3 bandas</option><option value="1">6 bandas</option><option value="2">7 bandas</option></select>
+<div id="basicEq" class="eq-controls">          <label for="bass">Graves · 120 Hz <output id="bassValue">0 dB</output></label>
+          <input id="bass" type="range" min="0" max="24" value="12">
+          <label for="mid">Médios · 750 Hz <output id="midValue">0 dB</output></label>
+          <input id="mid" type="range" min="0" max="24" value="12">
+          <label for="treble">Agudos · 3 kHz <output id="trebleValue">0 dB</output></label>
+          <input id="treble" type="range" min="0" max="24" value="12">
+</div>
+<div id="graphicEq" class="eq-controls" hidden><div class="eq-controls"><label for="eq1">100 Hz <output id="eq1Value">0 dB</output></label>
+<input id="eq1" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div><div class="eq-controls"><label for="eq2">200 Hz <output id="eq2Value">0 dB</output></label>
+<input id="eq2" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div><div class="eq-controls"><label for="eq3">400 Hz <output id="eq3Value">0 dB</output></label>
+<input id="eq3" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div><div class="eq-controls"><label for="eq4">800 Hz <output id="eq4Value">0 dB</output></label>
+<input id="eq4" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div><div class="eq-controls"><label for="eq5">1600 Hz <output id="eq5Value">0 dB</output></label>
+<input id="eq5" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div><div class="eq-controls"><label for="eq6">3200 Hz <output id="eq6Value">0 dB</output></label>
+<input id="eq6" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div><div class="eq-controls"><label for="eq7">6400 Hz <output id="eq7Value">0 dB</output></label>
+<input id="eq7" type="range" min="-12" max="12" value="0" data-unit=" dB">
+</div></div>        </div>
+      </fieldset>
+    <fieldset id="mod" data-panel hidden disabled>
+      <legend>Modulação</legend>
+      <div class="tone">
+        <label for="modMode">Tipo</label>
+        <select id="modMode">
+          <option value="0">Desligada</option><option value="1">Chorus</option>
+          <option value="2">Flanger</option><option value="3">Tremolo</option><option value="4">Phaser</option><option value="5">Vibrato</option>
+<optgroup label="Perfis modernos"><option value="6">Clean Chorus</option><option value="7">70s Chorus</option><option value="8">PlastiChorus</option><option value="9">Bass Liquifier</option><option value="10">Trinity Chorus</option><option value="11">4-Voice Chorus</option><option value="12">Dimension W</option><option value="13">Gray Flanger</option><option value="14">Harmonic Flanger</option><option value="15">Courtesan Flange</option><option value="16">Dynamix Flanger</option><option value="17">Script Mod Phase</option><option value="18">Pebble Phaser</option><option value="19">Deluxe Phaser</option><option value="20">Ubiquitous Vibe</option><option value="21">FlexoVibe</option><option value="22">Bubble Vibrato</option><option value="23">Essex Vibe</option><option value="24">Vibe Rotary</option><option value="25">122 Rotary</option><option value="26">145 Rotary</option><option value="27">Double Take</option><option value="28">Poly Detune</option><option value="29">Optical Trem</option><option value="30">60s Bias Trem</option><option value="31">Tremolo Autopan</option><option value="32">Harmonic Trem</option><option value="33">Bleat Chop Trem</option><option value="34">AM Ring Mod</option><option value="35">Pitch Ring Mod</option><option value="36">Retro Reel</option></optgroup>
+<optgroup label="Perfis Legacy"><option value="37">Pattern Tremolo</option><option value="38">Panner Mono</option><option value="39">Legacy Bias Trem</option><option value="40">Legacy Opto Trem</option><option value="41">Legacy Script Phase</option><option value="42">Panned Phaser</option><option value="43">Barberpole Phase</option><option value="44">Dual Phaser</option><option value="45">Legacy U-Vibe</option><option value="46">100 Phaser</option><option value="47">Pitch Vibrato</option><option value="48">Legacy Dimension</option><option value="49">Analog Chorus</option><option value="50">Tri Chorus</option><option value="51">Analog Flanger</option><option value="52">Jet Flanger</option><option value="53">AC Flanger</option><option value="54">80A Flanger</option><option value="55">Frequency Shift</option><option value="56">Legacy Ring Mod</option><option value="57">Rotary Drum</option><option value="58">Rotary Drum/Horn</option><option value="59">Tape Eater</option><option value="60">Warble Matic</option><option value="61">Random S&amp;H</option><option value="62">Sweeper</option></optgroup>
+        </select>
+        <div class="tone" id="modPatternRow" hidden>
+          <label for="modPattern">Padrão rítmico</label>
+          <select id="modPattern"><option value="0">Alternado</option><option value="1">Trincado</option><option value="2">Sincopado</option><option value="3">Crescente</option></select>
+        </div>
+        <label class="switch" id="modStereoRow" for="modStereo" hidden>Saída estéreo <input id="modStereo" type="checkbox"></label>
+        <label for="modSync">Sincronizar com Tap Tempo</label>
+        <select id="modSync"><option value="0">Velocidade manual</option><option value="1">Semínima</option><option value="2">Colcheia</option><option value="3">Colcheia pontuada</option><option value="4">Colcheia em tercina</option><option value="5">Semicolcheia</option></select>
+        <label for="modRate">Frequência da modulação <output id="modRateValue">1,2 Hz</output></label>
+        <input id="modRate" type="range" min="1" max="80" value="12">
+        <label for="modDepth">Profundidade <output id="modDepthValue">45%</output></label>
+        <input id="modDepth" type="range" min="0" max="100" value="45">
+        <label for="modMix">Mix <output id="modMixValue">35%</output></label>
+        <input id="modMix" type="range" min="0" max="100" value="35">
+      </div>
+    </fieldset>
+    <fieldset id="delay" data-panel hidden disabled>
+      <legend>Delay</legend>
+      <div class="tone">
+        <label class="switch" for="enabled">Delay <input id="enabled" type="checkbox"></label>
+        <label class="switch" id="delayStereoRow" for="delayStereo" hidden>Ping-pong estéreo <input id="delayStereo" type="checkbox"></label>
+        <label for="mix">Mix <output id="mixValue" for="mix">25%</output></label>
+        <input id="mix" type="range" min="0" max="100" value="25">
+        <label for="feedback">Feedback <output id="feedbackValue" for="feedback">38%</output></label>
+        <input id="feedback" type="range" min="0" max="90" value="38">
+      </div>
+    </fieldset>
+    <fieldset id="cloud" data-panel hidden disabled>
+      <legend>Reverb</legend>
+      <div class="tone">
+        <label class="switch" for="cloudEnabled">Reverb <input id="cloudEnabled" type="checkbox"></label>
+        <label for="reverbType">Tipo de reverb</label>
+        <select id="reverbType">
+          <option value="0">Cloud</option><option value="1">Studio</option>
+          <option value="2">Room</option><option value="3">Hall</option>
+          <option value="4">Church</option><option value="5">Large Plate</option>
+          <option value="6">Small Plate</option><option value="7">Spring</option>
+          <option value="8">Space</option><option value="9">Deep Sea</option><option value="10">Worship Hall</option>
+        </select>
+        <label class="switch" id="reverbStereoRow" for="reverbStereo" hidden>Cauda estéreo <input id="reverbStereo" type="checkbox"></label>
+        <label for="cloudMix">Mix <output id="cloudMixValue">30%</output></label>
+        <input id="cloudMix" type="range" min="0" max="100" value="30">
+        <label for="cloudDecay">Decay <output id="cloudDecayValue">65%</output></label>
+        <input id="cloudDecay" type="range" min="0" max="100" value="65">
+        <label for="cloudPre">Pré-delay <output id="cloudPreValue">25 ms</output></label>
+        <input id="cloudPre" type="range" min="0" max="100" value="25">
+        <label for="cloudTone">Tone <output id="cloudToneValue">45%</output></label>
+        <input id="cloudTone" type="range" min="0" max="100" value="45">
+        <label for="lowDamp">Low Damp <output id="lowDampValue">47%</output></label>
+        <input id="lowDamp" type="range" min="0" max="15" value="7">
+        <label for="highDamp">Hi Damp <output id="highDampValue">13%</output></label>
+        <input id="highDamp" type="range" min="0" max="15" value="2">
+        <button id="worshipSettings" type="button">Aplicar ajuste Worship</button>
+      </div>
+    </fieldset>
+    </form>
+    </section>
+    </div>
+    </section>
+    <section data-view-panel="global" hidden>
+      <fieldset id="globalControls" disabled><legend>Saída global</legend>
+        <div class="global-layout">
+          <div class="global-card"><h2>Equalizador</h2>
+            <label for="globalBass">Graves · 120 Hz <output id="globalBassValue">0 dB</output></label>
+            <input id="globalBass" type="range" min="-12" max="12" value="0" data-unit=" dB">
+            <label for="globalMid">Médios · 750 Hz <output id="globalMidValue">0 dB</output></label>
+            <input id="globalMid" type="range" min="-12" max="12" value="0" data-unit=" dB">
+            <label for="globalTreble">Agudos · 3 kHz <output id="globalTrebleValue">0 dB</output></label>
+            <input id="globalTreble" type="range" min="-12" max="12" value="0" data-unit=" dB">
+          </div>
+          <div class="global-card"><h2>Cortes de frequência</h2>
+            <label for="lowCutValue">Low Cut</label><select id="lowCutValue"><option value="0">Desligado</option><option value="1">60 Hz</option><option value="2">90 Hz</option><option value="3">120 Hz</option><option value="4">180 Hz</option></select>
+<label for="highCutValue">High Cut</label><select id="highCutValue"><option value="0">Desligado</option><option value="1">4 kHz</option><option value="2">6 kHz</option><option value="3">8 kHz</option><option value="4">10 kHz</option></select>
+
+          </div>
+        </div>
+      </fieldset>
+    </section>
+    <section data-view-panel="midi" hidden>
+    <fieldset id="midiMonitor" disabled>
+      <legend>Monitor MIDI</legend>
+      <div class="monitor-head">
+        <span id="midiMonitorStatus" class="note" role="status">Aguardando mensagens do Chocolate.</span>
+        <div class="monitor-actions">
+          <button id="midiMonitorPause" type="button" class="secondary" aria-pressed="false">Pausar</button>
+          <button id="midiMonitorClear" type="button" class="secondary">Limpar</button>
+        </div>
+      </div>
+      <ol id="midiLog" class="midi-log" aria-label="Mensagens MIDI recebidas"></ol>
+      <div class="midi-recent">
+        <span class="note">Últimos CC</span>
+        <ol id="midiRecentCc" class="midi-chips"></ol>
+      </div>
+      <div class="tone monitor-notes">
+        <p class="note">O monitor mostra o que o editor recebe do controlador pelo computador. Com o Chocolate ligado direto na GP-5, essas mensagens não passam pelo editor.</p>
+        <p class="note">Use Pausar e Limpar para conferir CC, PC e notas sem apagar o histórico.</p>
+      </div>
+    </fieldset>
+    <fieldset id="liveMidi" disabled hidden>
+      <legend>Chocolate direto na GP-5</legend>
+      <div class="tone">
+        <label for="liveExpression">Destino da expressão direta (CC 11)</label>
+        <select id="liveExpression">
+          <option value="0">Desligado</option><option value="1">Mix do delay</option><option value="2">Mix do reverb</option>
+          <option value="3">Mix da modulação</option><option value="4">Feedback do delay</option><option value="5">Pedal de volume</option>
+          <option value="6">Profundidade da modulação</option><option value="7">Velocidade da modulação</option>
+          <option value="8">Volume global</option><option value="9">Nível do amplificador</option>
+        </select>
+        <div class="limits">
+          <button type="button" data-midi-nav="83">Preset anterior · CC 83</button>
+          <button type="button" data-midi-nav="84">Próximo preset · CC 84</button>
+          <button type="button" data-midi-nav="85">Banco anterior · CC 85</button>
+          <button type="button" data-midi-nav="86">Próximo banco · CC 86</button>
+        </div>
+        <p class="note">Canal 1. Envie valor 127 ao pressionar. Bancos de quatro slots, a partir de 01. Os vazios são pulados.</p>
+        <p class="note">PC 0–30 escolhe um preset. CC 80 com valor 0, 1 ou 2 escolhe a cena. CC 81 com valor 127 marca o Tap. CC 82 com valor 0 ativa a cadeia e 127 ativa o bypass.</p>
+      </div>
+    </fieldset>
+    <fieldset id="performance" data-connection disabled>
+      <legend>Ponte MIDI pelo navegador</legend>
+      <div class="tone">
+        <label for="scene" hidden>Cena do timbre</label>
+        <select id="scene" hidden><option value="0">Base</option><option value="1">Solo</option><option value="2">Ambiente</option></select>
+        <label for="sceneMode">Toque curto no footswitch</label>
+        <select id="sceneMode"><option value="0">Liga/desliga delay</option><option value="1">Próxima cena</option><option value="2" disabled>Próximo preset</option></select>
+        <label for="midiSource">Entrada MIDI do Chocolate</label>
+        <select id="midiSource"><option value="">Selecione uma entrada</option></select>
+        <label for="midiChannel">Canal MIDI</label>
+        <input id="midiChannel" type="number" min="1" max="16" value="1">
+        <label for="expressionCc">CC da expressão</label>
+        <input id="expressionCc" type="number" min="0" max="127" value="11">
+        <label for="expressionTarget">Destino da expressão <output id="expressionValue">–</output></label>
+        <select id="expressionTarget">
+          <option value="0">Desligado</option><option value="1">Mix do delay</option><option value="2">Mix do reverb</option>
+          <option value="3">Mix da modulação</option><option value="4">Feedback do delay</option><option value="5" disabled>Pedal de volume</option>
+          <option value="6" disabled>Profundidade da modulação</option><option value="7" disabled>Velocidade da modulação</option>
+          <option value="8" disabled>Volume global</option><option value="9" disabled>Nível do amplificador</option>
+        </select>
+        <div class="limits">
+          <label for="expressionHeel">Calcanhar (%) <input id="expressionHeel" type="number" min="0" max="100" value="10"></label>
+          <label for="expressionToe">Ponta (%) <input id="expressionToe" type="number" min="0" max="100" value="45"></label>
+        </div>
+        <p id="midiPrograms" class="note">PC 0, 1 e 2 selecionam Base, Solo e Ambiente.</p>
+        <p id="midiStatus" class="note" role="status"></p>
+      </div>
+    </fieldset>
+    <details class="utility midi-codes">
+      <summary>Códigos para programar o Chocolate</summary>
+      <div class="tone">
+        <p class="note">Canal 1. Cada toque envia valor 127; a expressão é contínua, de 0 a 127.</p>
+        <h3>Chocolate ligado direto na GP-5 (host USB)</h3>
+        <table>
+          <thead><tr><th>Função</th><th>Comando</th></tr></thead>
+          <tbody>
+            <tr><td>Preset anterior</td><td>CC 83</td></tr>
+            <tr><td>Próximo preset</td><td>CC 84</td></tr>
+            <tr><td>Banco anterior</td><td>CC 85</td></tr>
+            <tr><td>Próximo banco</td><td>CC 86</td></tr>
+            <tr><td>Preset direto</td><td>PC 1–30 (0 = captura interna)</td></tr>
+            <tr><td>Base / Solo / Ambiente</td><td>CC 80 = 0 / 1 / 2</td></tr>
+            <tr><td>Tap Tempo</td><td>CC 81 = 127</td></tr>
+            <tr><td>Cadeia / bypass</td><td>CC 82 = 0 / 127</td></tr>
+            <tr><td>Expressão</td><td>CC 11 = 0–127</td></tr>
+          </tbody>
+        </table>
+        <h3>Chocolate no computador (ponte do editor)</h3>
+        <table>
+          <thead><tr><th>Função</th><th>Comando</th></tr></thead>
+          <tbody>
+            <tr><td>Base / Solo / Ambiente</td><td>PC 0 / 1 / 2 (modo Cenas)</td></tr>
+            <tr><td>Slots 01–30</td><td>PC 0–29 (modo Presets)</td></tr>
+            <tr><td>Expressão</td><td>CC 11, com destino escolhido no editor</td></tr>
+            <tr><td>Navegação direta</td><td>CC 83–86, quando o firmware aceita</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Na ponte, CC 80, 81 e 82 não são usados porque o editor não repassa esses comandos. Use o modo direto para eles.</p>
+      </div>
+    </details>
+    </section>
+    <section data-view-panel="library" hidden>
+      <nav class="library-tabs" aria-label="Biblioteca">
+        <button type="button" data-library-tab="tone" aria-pressed="true">Capturas NAM</button>
+        <button type="button" data-library-tab="cab" aria-pressed="false">IRs</button>
+        <button type="button" data-library-tab="presets" aria-pressed="false">Presets e backup</button>
+      </nav>
+      <p id="libraryStatus" class="note" role="status"></p>
+      <div id="installedFiles" class="library-grid">
+        <section class="library-card">
+          <div class="board-head"><h2 id="slotsTitle">Capturas na GP-5</h2>
+            <div class="slot-tools"><span id="slotCount" class="note"></span><button id="reloadSlots" class="secondary" type="button" disabled>Atualizar</button></div>
+          </div>
+          <input id="slotFilter" class="slot-filter" type="search" placeholder="Filtrar por nome ou número do slot" aria-label="Filtrar slots por nome ou número">
+          <ol id="slotList" class="slot-list"></ol>
+        </section>
+        <fieldset id="slotUpload" disabled>
+          <legend id="slotUploadTitle">Enviar captura</legend>
+          <div class="tone">
+            <input id="slotFile" type="file" accept=".nam" multiple hidden>
+            <button id="slotPicker" type="button">Escolher capturas .nam</button>
+            <button id="folderPicker" type="button" class="secondary">Escolher pasta</button>
+            <input id="folderFiles" type="file" webkitdirectory multiple hidden>
+            <p class="note">Os arquivos selecionados vão direto para slots livres da GP-5. A pasta é lida no navegador.</p>
+            <details id="manualSlot">
+              <summary>Escolher slot manualmente</summary>
+              <label for="slotNumber">Slot de destino</label>
+              <input id="slotNumber" type="number" min="1" max="30" value="1">
+              <button id="sendSlot" class="secondary" type="button">Escolher e gravar</button>
+            </details>
+          </div>
+        </fieldset>
+      </div>
+      <details class="utility" data-library-panel="tone">
+    <summary>Banco de capturas do navegador</summary>
+    <fieldset>
+      <legend>Banco NAM A2 deste navegador</legend>
+      <div class="tone">
+        <label for="bankFiles">Importar capturas NAM A2</label>
+        <input id="bankFiles" type="file" accept=".nam" multiple>
+        <button id="bankImport" type="button">Adicionar ao banco</button>
+        <button id="bankSendFiles" type="button" disabled>Enviar arquivos selecionados à GP-5</button>
+        <label for="bankCapture">Captura guardada</label>
+        <select id="bankCapture"><option value="">Selecione uma captura</option></select>
+        <label for="bankSlot">Slot de destino na GP-5 (1–30)</label>
+        <input id="bankSlot" type="number" min="1" max="30" value="1">
+        <button id="bankSend" type="button">Enviar à GP-5</button>
+        <button id="bankRemove" type="button">Remover do banco local</button>
+        <p class="note" id="bankStatus" role="status">Até 50 capturas neste navegador.</p>
+      </div>
+    </fieldset>
+      </details>
+      <div data-library-panel="presets" class="library-grid" hidden>
+        <fieldset id="library" disabled><legend>Presets da cena</legend><div class="tone">
+        <label for="presetFile">Preset individual (.gp5preset ou .prst)</label>
+        <input id="presetFile" type="file" accept=".gp5preset,.prst">
+        <button id="importPreset" type="button">Importar na cena atual</button>
+        <button id="exportPreset" type="button">Exportar cena (.gp5preset)</button>
+        <button id="exportPrst" type="button" disabled>Exportar como Valeton (.prst)</button>
+        <p id="presetStatus" class="note" role="status">Abra um .prst da GP-5 para usá-lo como base ao exportar nesse formato.</p>
+        </div></fieldset>
+        <fieldset id="libraryBackup" disabled><legend>Backup completo</legend><div class="tone">
+        <button id="exportLibrary" type="button">Exportar toda a biblioteca</button>
+        <label for="importFile">Arquivo para importar (.gp5library)</label>
+        <input id="importFile" type="file" accept=".gp5library">
+        <button id="importLibrary" type="button" disabled>Restaurar biblioteca</button>
+        <p class="note">Inclui os slots de capturas, IRs, presets e cenas.</p>
+      </div>
+    </fieldset>
+      </div>
+    </section>
+    <fieldset id="quickOutput" class="quick-output" disabled>
+      <legend>Saída</legend>
+      <div class="output-controls">
+        <label for="globalVolume">Volume global <output id="globalVolumeValue">100%</output></label>
+        <input id="globalVolume" type="range" min="0" max="100" value="100" data-unit="%">
+      </div>
+    </fieldset>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
