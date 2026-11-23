@@ -82,10 +82,11 @@ async function api(path) {
 export async function t3kTone(id) { return api(`/tones/${id}`); }
 
 export async function t3kModels(id) {
-    const tone = await api(`/tones/${id}`);
-    const embedded = tone.models || tone.tone?.models || tone.data?.models;
+    let tone = null;
+    try { tone = await api(`/tones/${id}`); } catch { /* may be private, deleted, or a different id shape */ }
+    const embedded = tone?.models || tone?.tone?.models || tone?.data?.models;
     if (Array.isArray(embedded) && embedded.length) return embedded;
-    for (const path of [`/models?tone_id=${id}&architecture=2`, `/tones/${id}/models?architecture=2`]) {
+    for (const path of [`/models?tone_id=${id}&architecture=2`, `/tones/${id}/models?architecture=2`, `/models?tone_id=${id}`]) {
         try {
             const data = await api(path);
             const list = Array.isArray(data) ? data : data.data || data.models || [];

@@ -3,7 +3,7 @@ import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import13";
-import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kStoreTokens, t3kToken } from "./t3k.js?v=3";
+import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kStoreTokens, t3kToken } from "./t3k.js?v=4";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
