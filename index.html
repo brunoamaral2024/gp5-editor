@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
   <link rel="stylesheet" href="./style.css?v=import7">
-  <script type="module" src="./editor.js?v=import25"></script>
+  <script type="module" src="./editor.js?v=import26"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -136,7 +136,7 @@
             <button id="toggleAB" type="button" class="secondary" disabled>A/B</button>
           </div>
           <label for="copyTarget">Copiar esta cena para</label>
-          <select id="copyTarget"><option value="0">Base</option><option value="1">Solo</option><option value="2">Ambiente</option><option value="3">Cena 4</option></select>
+          <select id="copyTarget"><option value="0">Base</option><option value="1">Solo</option><option value="2">Ambiente</option></select>
           <button id="copyScene" type="button" class="secondary">Copiar cena</button>
         </div>
       </fieldset>
@@ -568,7 +568,7 @@
         <input id="sceneName0" maxlength="12" placeholder="Base">
         <input id="sceneName1" maxlength="12" placeholder="Solo">
         <input id="sceneName2" maxlength="12" placeholder="Ambiente">
-        <input id="sceneName3" maxlength="12" placeholder="Cena 4">
+        <input id="sceneName3" maxlength="12" placeholder="Cena 4" hidden>
         <button id="saveSceneNames" type="button" class="secondary">Salvar nomes das cenas</button>
       </div>
     </fieldset>
