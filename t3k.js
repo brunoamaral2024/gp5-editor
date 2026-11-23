@@ -76,8 +76,17 @@ async function api(path) {
 export async function t3kTone(id) { return api(`/tones/${id}`); }
 
 export async function t3kModels(id) {
-    const data = await api(`/models?tone_id=${id}&architecture=2`);
-    return Array.isArray(data) ? data : data.data || data.models || [];
+    const tone = await api(`/tones/${id}`);
+    const embedded = tone.models || tone.tone?.models || tone.data?.models;
+    if (Array.isArray(embedded) && embedded.length) return embedded;
+    for (const path of [`/models?tone_id=${id}&architecture=2`, `/tones/${id}/models?architecture=2`]) {
+        try {
+            const data = await api(path);
+            const list = Array.isArray(data) ? data : data.data || data.models || [];
+            if (list.length) return list;
+        } catch { /* try the next shape */ }
+    }
+    return embedded || [];
 }
 
 export function t3kIdFromInput(text) {
