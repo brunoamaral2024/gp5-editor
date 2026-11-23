@@ -81,6 +81,12 @@ async function api(path) {
 
 export async function t3kTone(id) { return api(`/tones/${id}`); }
 
+export async function t3kSearch(query) {
+    const params = new URLSearchParams({ query, architecture: "2", page_size: "20" });
+    const data = await api(`/tones/search?${params}`);
+    return Array.isArray(data) ? data : data.data || data.tones || data.results || [];
+}
+
 export async function t3kModels(id) {
     let tone = null;
     try { tone = await api(`/tones/${id}`); } catch { /* may be private, deleted, or a different id shape */ }

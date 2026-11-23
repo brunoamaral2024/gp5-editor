@@ -3,7 +3,7 @@ import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import13";
-import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kStoreTokens, t3kToken } from "./t3k.js?v=7";
+import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken } from "./t3k.js?v=8";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -1470,6 +1470,29 @@ get("t3kClient").value = t3kClient();
 t3kRefreshState();
 get("t3kConnect").addEventListener("click", () => {
   t3kConnect(get("t3kClient").value.trim()).catch(error => toast(error.message));
+});
+get("t3kSearch").addEventListener("click", () => {
+  const query = get("t3kQuery").value.trim();
+  const results = get("t3kResults");
+  if (!query) { toast("Digite o que procurar."); return; }
+  if (!t3kToken()) { toast("Conecte a TONE3000 primeiro."); return; }
+  results.replaceChildren();
+  t3kSearch(query).then(list => {
+    if (!list.length) { toast("Nada encontrado."); return; }
+    for (const tone of list) {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = `${tone.name || tone.title || "Tone"} · ${tone.user?.username || tone.creator || tone.id}`;
+      button.addEventListener("click", () => {
+        get("t3kTone").value = String(tone.id);
+        toast(`Selecionado: ${tone.name || tone.id}`);
+      });
+      item.append(button);
+      results.append(item);
+    }
+  }).catch(error => toast(error.message));
 });
 get("t3kDownload").addEventListener("click", () => {
   if (!link || libraryBusy) return;
