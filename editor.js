@@ -781,6 +781,7 @@ function run(operation) {
   pending++;
   queue = queue.then(operation).catch(async (error) => {
     status.textContent = error.message;
+    toast(error.message);
     closeController();
     slotsRead = false;
     installed = [];
