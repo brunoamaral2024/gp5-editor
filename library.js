@@ -296,3 +296,14 @@ export async function renameSlotFile(link, slot, name) {
   await writeFile(link, OWNER, fileName, bytes);
   return name;
 }
+
+export async function moveSlotFile(link, from, to) {
+  const source = `tone-${String(from).padStart(2, "0")}`;
+  const target = `tone-${String(to).padStart(2, "0")}`;
+  const file = (await listFiles(link)).files.find(entry => entry.name === source && entry.owner === OWNER);
+  if (!file) throw new Error(`O slot ${from} está vazio.`);
+  const bytes = await readFile(link, file);
+  await writeFile(link, OWNER, target, bytes);
+  if (source !== target) await deleteFile(link, OWNER, source);
+  return to;
+}

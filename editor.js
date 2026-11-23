@@ -2,7 +2,7 @@ import { installCaptureBank } from "./capture-bank.js";
 import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { exportLibrary, listInstalledFiles, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import11";
+import { exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import12";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -29,7 +29,7 @@ function setSaveState(text) {
     saveTimer = setTimeout(() => { if (element.textContent === "Salvo") element.textContent = ""; }, 2400);
 }
 const setDisabled = (disabled) => {
-  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput")]) panel.disabled = disabled;
+  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput"), get("sceneToolsField")]) panel.disabled = disabled;
   const indicator = get("connectionState");
   indicator.dataset.online = String(!!link && !disabled);
   indicator.textContent = link && libraryBusy ? "Transferindo" : disabled ? "Desconectada" : "GP-5 conectada";
@@ -181,6 +181,8 @@ let stereoControls = false;
 let nativeMidi = false;
 let navigationTimer;
 let manualDestination = false;
+const undoStack = [];
+let snapA, snapB, abShowing = "A";
 let midiMessages = 0;
 let midiMonitorPaused = false;
 const midiRecent = new Map();
@@ -827,6 +829,11 @@ for (const { id, input } of [...fields, ...extraFields, ...stereoFields, ...live
   input.addEventListener("change", () => {
     if (!input.checkValidity() || input.value === "") { input.reportValidity(); return; }
     const value = input.type === "checkbox" ? Number(input.checked) : Number(input.value);
+    if (current[id] !== value) {
+      undoStack.push({ id, value: current[id] });
+      if (undoStack.length > 30) undoStack.shift();
+      get("undoChange").disabled = false;
+    }
     run(async () => {
       if (!link) return;
       setSaveState("Salvando…");
@@ -859,6 +866,62 @@ get("saveScene").addEventListener("click", () => run(async () => {
     current[id] === (input.type === "checkbox" ? Number(input.checked) : Number(input.value)));
   setSaveState(saved ? "Salvo" : "Não confirmado");
   toast(saved ? "Cena salva na GP-5" : "A GP-5 não confirmou todos os ajustes. Tente de novo.");
+}));
+get("undoChange").addEventListener("click", () => run(async () => {
+  if (!link || libraryBusy) return;
+  const entry = undoStack.pop();
+  if (!entry) return;
+  await writeParam(entry.id, entry.value);
+  await refresh();
+  get("undoChange").disabled = !undoStack.length;
+  toast("Ajuste desfeito");
+}));
+function snapshotAll() {
+  return [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]
+    .map(({ id }) => current[id]);
+}
+function applySnapshot(values) {
+  return applySnapshotFrom(values, [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]);
+}
+async function applySnapshotFrom(values, list) {
+  for (const { id } of list) if (id !== 7 && id !== 27 && Number.isFinite(values[id])) await writeParam(id, values[id]);
+  await refresh();
+}
+get("snapshotA").addEventListener("click", () => run(async () => {
+  if (!link || libraryBusy) return;
+  await refresh();
+  snapA = snapshotAll();
+  get("toggleAB").disabled = !(snapA && snapB);
+  toast("Snapshot A salvo");
+}));
+get("snapshotB").addEventListener("click", () => run(async () => {
+  if (!link || libraryBusy) return;
+  await refresh();
+  snapB = snapshotAll();
+  get("toggleAB").disabled = !(snapA && snapB);
+  toast("Snapshot B salvo");
+}));
+get("toggleAB").addEventListener("click", () => run(async () => {
+  if (!link || libraryBusy) return;
+  const values = abShowing === "A" ? snapB : snapA;
+  if (!values) return;
+  await applySnapshotFrom(values, [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]);
+  abShowing = abShowing === "A" ? "B" : "A";
+  toast(`Mostrando ${abShowing}`);
+}));
+get("copyScene").addEventListener("click", () => run(async () => {
+  if (!link || libraryBusy) return;
+  const source = Number(get("scene").value);
+  const target = Number(get("copyTarget").value);
+  if (source === target) { toast("Escolha uma cena diferente."); return; }
+  const values = await readParameters();
+  await writeParam(27, target);
+  for (const { id } of [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : [])]) {
+    if (id === 7 || id === 27) continue;
+    if (Number.isFinite(values[id])) await writeParam(id, values[id]);
+  }
+  await refresh();
+  toast(`Cena copiada para ${get("copyTarget").selectedOptions[0].textContent}`);
 }));
 get("worshipSettings").addEventListener("click", () => {
   if (!link || libraryBusy) return;
@@ -989,6 +1052,25 @@ function showSlots() {
           });
         });
         actions.prepend(rename);
+        const move = document.createElement("button");
+        move.className = "secondary";
+        move.type = "button";
+        move.textContent = "Mover";
+        move.setAttribute("aria-label", `Mover ${stored} para outro slot`);
+        move.disabled = !link;
+        move.addEventListener("click", () => {
+          if (!link || libraryBusy) return;
+          const to = Number(prompt(`Mover ${stored} para o slot (1–30):`, String(slot)));
+          if (!Number.isInteger(to) || to < 1 || to > 30 || to === slot) return;
+          const taken = installed.some(entry => entry.kind === "tone" && entry.slot === to);
+          if (taken && !confirm(`O slot ${to} já tem captura e será substituído. Continuar?`)) return;
+          transferLibrary(2, async (heartbeat) => {
+            await heartbeat();
+            await moveSlotFile(link, slot, to);
+            return `Slot ${String(slot).padStart(2, "0")} movido para ${String(to).padStart(2, "0")}.`;
+          });
+        });
+        actions.prepend(move);
       }
       const use = document.createElement("button");
       const kind = libraryTab;

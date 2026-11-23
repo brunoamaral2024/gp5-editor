@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
   <link rel="stylesheet" href="./style.css?v=import7">
-  <script type="module" src="./editor.js?v=import11"></script>
+  <script type="module" src="./editor.js?v=import12"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -117,6 +117,22 @@
         <output id="interval" for="bpm division">500 ms por repetição</output>
       </div>
     </fieldset>
+    <details class="utility" id="sceneTools">
+      <summary>Ferramentas da cena</summary>
+      <fieldset id="sceneToolsField" disabled>
+        <div class="tone">
+          <div class="limits">
+            <button id="undoChange" type="button" class="secondary" disabled>Desfazer</button>
+            <button id="snapshotA" type="button" class="secondary">Salvar A</button>
+            <button id="snapshotB" type="button" class="secondary">Salvar B</button>
+            <button id="toggleAB" type="button" class="secondary" disabled>A/B</button>
+          </div>
+          <label for="copyTarget">Copiar esta cena para</label>
+          <select id="copyTarget"><option value="0">Base</option><option value="1">Solo</option><option value="2">Ambiente</option><option value="3">Cena 4</option></select>
+          <button id="copyScene" type="button" class="secondary">Copiar cena</button>
+        </div>
+      </fieldset>
+    </details>
     </div>
     <section id="effectPanel" class="effect-panel" aria-labelledby="effectTitle">
       <div class="effect-heading">
