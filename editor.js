@@ -3,7 +3,7 @@ import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import13";
-import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kToken } from "./t3k.js?v=2";
+import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kStoreTokens, t3kToken } from "./t3k.js?v=3";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -1481,6 +1481,15 @@ get("t3kDownload").addEventListener("click", () => {
 });
 t3kHandleCallback().then(() => { get("t3kClient").value = t3kClient(); toast("TONE3000 conectado"); })
   .catch(error => toast(error.message));
+window.addEventListener("message", event => {
+  if (event.origin !== location.origin) return;
+  if (event.data?.type === "t3k-token") {
+    t3kStoreTokens(event.data.tokens);
+    toast("TONE3000 conectado");
+  } else if (event.data?.type === "t3k-error") {
+    toast(`TONE3000: ${event.data.message}`);
+  }
+});
 get("exportLibrary").addEventListener("click", () => {
   transferLibrary(1, async (heartbeat) => {
     const reply = await request(0x11, 7, 0, 1);

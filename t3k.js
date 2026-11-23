@@ -13,6 +13,12 @@ export function t3kToken() {
     return token && Date.now() < exp ? token : "";
 }
 export function t3kRedirectUri() { return location.origin + location.pathname; }
+export function t3kCallbackUri() { return location.origin + location.pathname.replace(/[^/]*$/, "") + "t3k-callback.html"; }
+export function t3kStoreTokens(tokens) {
+    if (!tokens?.access_token) return;
+    localStorage.setItem(TOKEN, tokens.access_token);
+    localStorage.setItem(EXP, String(Date.now() + (Number(tokens.expires_in) || 3600) * 1000 - 60000));
+}
 
 function b64url(bytes) {
     let s = "";
@@ -30,13 +36,14 @@ export async function t3kConnect(clientId) {
     sessionStorage.setItem(STATE, state);
     const params = new URLSearchParams({
         client_id: clientId,
-        redirect_uri: t3kRedirectUri(),
+        redirect_uri: t3kCallbackUri(),
         response_type: "code",
         code_challenge: b64url(new Uint8Array(digest)),
         code_challenge_method: "S256",
         state,
     });
-    location.href = `${API}/oauth/authorize?${params}`;
+    const popup = window.open(`${API}/oauth/authorize?${params}`, "t3k", "popup,width=520,height=720");
+    if (!popup) throw new Error("O navegador bloqueou a janela da TONE3000. Permita pop-ups para este site.");
 }
 
 export async function t3kHandleCallback() {
@@ -60,8 +67,7 @@ export async function t3kHandleCallback() {
     });
     if (!response.ok) throw new Error(`TONE3000: token ${response.status}`);
     const tokens = await response.json();
-    localStorage.setItem(TOKEN, tokens.access_token);
-    localStorage.setItem(EXP, String(Date.now() + (Number(tokens.expires_in) || 3600) * 1000 - 60000));
+    t3kStoreTokens(tokens);
     return tokens;
 }
 

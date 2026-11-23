@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<title>TONE3000</title>
+<style>
+    body { background: #0d1117; color: #e6edf3; font: 15px system-ui, sans-serif; display: grid; place-items: center; height: 100vh; margin: 0; }
+</style>
+<p id="status">Conectando à TONE3000…</p>
+<script>
+    const API = "https://www.tone3000.com/api/v1";
+    const status = document.getElementById("status");
+    const finish = payload => {
+        if (window.opener) window.opener.postMessage(payload, location.origin);
+        window.close();
+    };
+    (async () => {
+        const params = new URLSearchParams(location.search);
+        const code = params.get("code"), state = params.get("state"), error = params.get("error");
+        try {
+            if (error) throw new Error(error);
+            if (!code) throw new Error("sem código de autorização");
+            if (state !== sessionStorage.getItem("t3k_state")) throw new Error("state inválido");
+            const response = await fetch(`${API}/oauth/token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    grant_type: "authorization_code",
+                    code,
+                    code_verifier: sessionStorage.getItem("t3k_verifier") || "",
+                    redirect_uri: location.origin + location.pathname,
+                    client_id: localStorage.getItem("t3k_client") || "",
+                }),
+            });
+            if (!response.ok) throw new Error(`token ${response.status}`);
+            finish({ type: "t3k-token", tokens: await response.json() });
+        } catch (error) {
+            status.textContent = "Falhou: " + (error.message || error);
+            finish({ type: "t3k-error", message: String(error.message || error) });
+        }
+    })();
+</script>
+</html>
