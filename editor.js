@@ -64,6 +64,20 @@ for (const block of blocks)
     toggleEffect(block.dataset.block);
   });
 
+for (const block of blocks) {
+  const power = document.createElement("button");
+  power.type = "button";
+  power.className = "pedal-power";
+  power.title = "Ligar/desligar este bloco";
+  power.setAttribute("aria-label", "Ligar ou desligar o bloco");
+  power.textContent = "⏻";
+  power.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleEffect(block.dataset.block);
+  });
+  block.append(power);
+}
+
 const headerElement = document.querySelector("header");
 function syncHeaderHeight() {
   if (headerElement) document.documentElement.style.setProperty("--header-h", `${Math.ceil(headerElement.getBoundingClientRect().height)}px`);
