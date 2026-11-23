@@ -863,7 +863,7 @@ connect.addEventListener("click", async () => {
     updateMidiSources();
     clearMidiMonitor();
     if (nativeMidi)
-      get("midiMonitorStatus").textContent = "Chocolate direto na GP-5: o editor não recebe essas mensagens.";
+      get("midiMonitorStatus").textContent = "Chocolate no computador: a GP-5 não é host USB neste firmware. Ligue a Chocolate (ou o receptor) na USB do PC e escolha a entrada acima.";
     setDisabled(false);
     connect.textContent = "Desconectar";
     showOrder();
