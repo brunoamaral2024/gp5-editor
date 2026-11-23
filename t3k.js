@@ -107,13 +107,16 @@ export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
         const tone = await t3kTone(toneId).catch(() => ({}));
         throw new Error(`TONE3000: tone sem modelos (chaves: ${Object.keys(tone).join(", ") || "?"})`);
     }
-    const isA2 = model => [2, "2", "A2", "a2"].includes(model.architecture);
-    const model = models.find(item => isA2(item) && /nam/i.test(item.format || "")) || models.find(isA2);
+    const field = (item, name) => item?.[name] ?? item?.model?.[name] ?? item?.meta?.[name] ?? item?.metadata?.[name];
+    const isA2 = model => [2, "2", "A2", "a2"].includes(field(model, "architecture"));
+    const format = model => String(field(model, "format") || "");
+    const model = models.find(item => isA2(item) && /nam/i.test(format(item))) || models.find(isA2);
     if (!model) {
-        const found = models.map(item => `${item.architecture ?? "?"}/${item.format ?? "?"}`).join(", ") || "nenhum modelo";
-        throw new Error(`TONE3000: nenhum modelo A2 nesse tone (encontrado: ${found}; A1 não roda na GP-5).`);
+        const found = models.map(item => `${field(item, "architecture") ?? "?"}/${format(item) || "?"}`).join(", ") || "nenhum modelo";
+        const keys = models[0] ? Object.keys(models[0]).join(", ") : "";
+        throw new Error(`TONE3000: nenhum modelo A2 (encontrado: ${found}; campos: ${keys || "?"}; A1 não roda na GP-5).`);
     }
-    const url = model.model_url || model.url || model.download_url;
+    const url = model.model_url || model.url || model.download_url || model.model?.url || model.files?.nam?.url || model.files?.[0]?.url;
     if (!url) throw new Error("TONE3000: modelo sem URL de download.");
     const response = await fetch(url, { headers: { Authorization: `Bearer ${t3kToken()}` } });
     if (!response.ok) throw new Error(`TONE3000: download ${response.status}`);
