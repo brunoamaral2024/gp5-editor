@@ -2,7 +2,7 @@ import { installCaptureBank } from "./capture-bank.js";
 import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { exportLibrary, listInstalledFiles, namError, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import8";
+import { exportLibrary, listInstalledFiles, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import11";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -969,6 +969,27 @@ function showSlots() {
     actions.className = "slot-actions";
     actions.append(select);
     if (stored) {
+      if (libraryTab === "tone") {
+        const rename = document.createElement("button");
+        rename.className = "secondary";
+        rename.type = "button";
+        rename.textContent = "Renomear";
+        rename.setAttribute("aria-label", `Renomear ${stored}`);
+        rename.disabled = !link;
+        rename.addEventListener("click", () => {
+          if (!link || libraryBusy) return;
+          const input = prompt(`Novo nome para ${stored}`, stored);
+          if (input === null) return;
+          const name = input.trim();
+          if (!name) return;
+          transferLibrary(2, async (heartbeat) => {
+            await heartbeat();
+            await renameSlotFile(link, slot, name);
+            return `Slot ${String(slot).padStart(2, "0")} renomeado para "${name}".`;
+          });
+        });
+        actions.prepend(rename);
+      }
       const use = document.createElement("button");
       const kind = libraryTab;
       use.className = "secondary";

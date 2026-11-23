@@ -274,3 +274,25 @@ export async function planSlotBatch(link, files, firstSlot, kind, progress = () 
 export async function sendSlotFile(link, { name, data }, progress) {
   await writeFile(link, OWNER, name, data, value => progress(`Gravando ${name} · ${Math.round(value * 100)}%…`));
 }
+
+// Rewrite the 24-byte name inside a capture blob and fix its CRC.
+export function patchToneName(bytes, name) {
+  if (!blobInfo(bytes)) throw new Error("Arquivo de captura inválido.");
+  const encoded = new TextEncoder().encode(name);
+  if (!encoded.length || encoded.length > 23 || [...encoded].some(byte => byte < 0x20 || byte > 0x7e))
+    throw new Error("Use de 1 a 23 caracteres (letras, números e espaço) no nome.");
+  bytes.fill(0, 44, 68);
+  bytes.set(encoded, 44);
+  new DataView(bytes.buffer, bytes.byteOffset).setUint32(8, crc32(bytes.subarray(12)), true);
+  return name;
+}
+
+export async function renameSlotFile(link, slot, name) {
+  const fileName = `tone-${String(slot).padStart(2, "0")}`;
+  const file = (await listFiles(link)).files.find(entry => entry.name === fileName && entry.owner === OWNER);
+  if (!file) throw new Error(`O slot ${slot} está vazio.`);
+  const bytes = await readFile(link, file);
+  patchToneName(bytes, name);
+  await writeFile(link, OWNER, fileName, bytes);
+  return name;
+}
