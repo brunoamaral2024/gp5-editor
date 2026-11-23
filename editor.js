@@ -1051,7 +1051,7 @@ function showSlots() {
   const entries = installed.filter(item => item.kind === libraryTab);
   const slots = new Map(entries.map(item => [item.slot, item.name]));
   const label = libraryTab === "tone" ? "capturas" : "IRs";
-  get("slotCount").textContent = `${slots.size} de 30 ${label}`;
+  get("slotCount").textContent = `${slots.size} ocupadas · ${30 - slots.size} livres`;
   let shown = 0;
   for (let slot = 1; slot <= 30; slot++) {
     const stored = slots.get(slot);
@@ -1059,6 +1059,7 @@ function showSlots() {
     shown++;
     const row = document.createElement("li");
     row.dataset.slot = String(slot);
+    row.classList.add(stored ? "slot-occupied" : "slot-free");
     const number = document.createElement("code");
     const name = document.createElement("span");
     const select = document.createElement("button");

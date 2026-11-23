@@ -226,6 +226,11 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .slot-list .slot-empty { color:var(--muted); font-style:italic; }
 .slot-empty-row { display:block !important; padding:.8rem .25rem !important; color:var(--muted); font-size:.9rem; }
 .slot-name { min-width:0; overflow-wrap:anywhere; }
+.slot-list li.slot-occupied { background:rgba(104,231,186,.05); border-left:3px solid rgba(104,231,186,.55); }
+.slot-list li.slot-occupied code { color:#9ff0d0; }
+.slot-list li.slot-free { opacity:.55; }
+.slot-list li.slot-free code { color:var(--muted); }
+.slot-list li.slot-free .slot-name { font-style:italic; }
 @media (max-width: 760px) {
   .slot-list li { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; }
   .slot-list li > code { flex:0 0 auto; }
