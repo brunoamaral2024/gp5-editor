@@ -1497,6 +1497,25 @@ get("tunerRef").addEventListener("change", () => {
     toast(`A4 = ${hz} Hz`);
   });
 });
+get("saveSceneNames").addEventListener("click", () => {
+  if (!link || libraryBusy) return;
+  const names = [0, 1, 2, 3].map(i => {
+    const value = get(`sceneName${i}`).value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, " ").trim().slice(0, 12);
+    return value;
+  });
+  run(async () => {
+    if (!link) return;
+    toast("Salvando nomes das cenas…");
+    for (let scene = 0; scene < 4; scene++) {
+      const name = names[scene];
+      for (let pos = 0; pos <= 12; pos++) {
+        const code = pos < name.length ? name.charCodeAt(pos) : 0;
+        await writeParam(93, (scene << 16) | (pos << 8) | (code & 0x7f));
+      }
+    }
+    toast("Nomes das cenas salvos");
+  });
+});
 function t3kRefreshState() {
   const connected = Boolean(t3kToken());
   get("t3kConnect").textContent = connected ? "Conectado" : "Conectar";
