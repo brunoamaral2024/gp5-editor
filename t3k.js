@@ -97,6 +97,10 @@ export function t3kIdFromInput(text) {
 
 export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
     const models = await t3kModels(toneId);
+    if (!models.length) {
+        const tone = await t3kTone(toneId).catch(() => ({}));
+        throw new Error(`TONE3000: tone sem modelos (chaves: ${Object.keys(tone).join(", ") || "?"})`);
+    }
     const isA2 = model => [2, "2", "A2", "a2"].includes(model.architecture);
     const model = models.find(item => isA2(item) && /nam/i.test(item.format || "")) || models.find(isA2);
     if (!model) {
