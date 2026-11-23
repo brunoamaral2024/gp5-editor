@@ -1292,6 +1292,10 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
     try {
       for (const [i, entry] of entries.entries()) {
         await heartbeat();
+        const targetSlot = Number(entry.name.slice(-2));
+        if (installed.some(item => item.kind === kind && item.slot === targetSlot)) {
+          await deleteSlotFile(link, targetSlot);   /* replace an existing capture */
+        }
         await sendSlotFile(link, entry, details => progress(`${i + 1}/${entries.length} · ${details}`));
         written.push(entry.name.slice(-2));
       }
