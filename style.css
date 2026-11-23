@@ -225,10 +225,12 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .slot-filter { width:100%; margin:.15rem 0 .45rem; min-height:40px; padding:.4rem .6rem; border:1px solid var(--line); border-radius:.4rem; background:#181b22; color:var(--text); }
 .slot-list .slot-empty { color:var(--muted); font-style:italic; }
 .slot-empty-row { display:block !important; padding:.8rem .25rem !important; color:var(--muted); font-size:.9rem; }
-@media (max-width: 640px) {
-  .slot-list li { grid-template-columns: 3.2rem minmax(0,1fr); row-gap:.3rem; overflow-wrap:normal; }
-  .slot-list li > :nth-child(2) { overflow-wrap:anywhere; word-break:normal; }
-  .slot-actions { grid-column: 1 / -1; justify-content:flex-start; }
+.slot-name { min-width:0; overflow-wrap:anywhere; }
+@media (max-width: 760px) {
+  .slot-list li { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; }
+  .slot-list li > code { flex:0 0 auto; }
+  .slot-name { flex:1 1 8rem; }
+  .slot-actions { flex:1 1 100%; justify-content:flex-start; }
 }
 
 /* Toast */

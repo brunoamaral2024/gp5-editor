@@ -1066,7 +1066,7 @@ function showSlots() {
     const select = document.createElement("button");
     number.textContent = `B${Math.ceil(slot / 4)}·${String(slot).padStart(2, "0")}`;
     name.textContent = stored ?? (slotsRead ? "Vazio" : link ? "…" : "–");
-    if (!stored) name.className = "slot-empty";
+    name.className = stored ? "slot-name" : "slot-name slot-empty";
     select.className = "secondary";
     select.type = "button";
     select.textContent = "Destino";
