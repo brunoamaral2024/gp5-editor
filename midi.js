@@ -32,7 +32,7 @@ export function portBase(name) {
 
 export async function webMidiPorts() {
   if (!navigator.requestMIDIAccess)
-    throw new Error("Este navegador não oferece Web MIDI. Abra o endereço HTTPS no Chrome do Android ou no Chrome/Edge do computador.");
+    throw new Error("Este navegador não oferece Web MIDI. Use Chrome/Edge no computador; no iPhone/iPad o Safari não tem Web MIDI.");
   let access;
   try {
     access = await navigator.requestMIDIAccess({ sysex: true });
