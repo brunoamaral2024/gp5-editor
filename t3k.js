@@ -76,7 +76,7 @@ async function api(path) {
 export async function t3kTone(id) { return api(`/tones/${id}`); }
 
 export async function t3kModels(id) {
-    const data = await api(`/models?tone_id=${id}`);
+    const data = await api(`/models?tone_id=${id}&architecture=2`);
     return Array.isArray(data) ? data : data.data || data.models || [];
 }
 
@@ -88,9 +88,12 @@ export function t3kIdFromInput(text) {
 
 export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
     const models = await t3kModels(toneId);
-    const isA2 = model => Number(model.architecture) === 2 || model.architecture === "2";
+    const isA2 = model => [2, "2", "A2", "a2"].includes(model.architecture);
     const model = models.find(item => isA2(item) && /nam/i.test(item.format || "")) || models.find(isA2);
-    if (!model) throw new Error("TONE3000: nenhum modelo A2 nesse tone (A1 não roda na GP-5).");
+    if (!model) {
+        const found = models.map(item => `${item.architecture ?? "?"}/${item.format ?? "?"}`).join(", ") || "nenhum modelo";
+        throw new Error(`TONE3000: nenhum modelo A2 nesse tone (encontrado: ${found}; A1 não roda na GP-5).`);
+    }
     const url = model.model_url || model.url || model.download_url;
     if (!url) throw new Error("TONE3000: modelo sem URL de download.");
     const response = await fetch(url, { headers: { Authorization: `Bearer ${t3kToken()}` } });
