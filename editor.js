@@ -1,8 +1,8 @@
 import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import15";
-import { t3kClient, t3kConnect, t3kDownloadFile, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken } from "./t3k.js?v=9";
+import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, patchToneName, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import16";
+import { t3kClient, t3kConnect, t3kDownloadFile, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken, t3kTone } from "./t3k.js?v=10";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -1530,13 +1530,20 @@ get("t3kDownload").addEventListener("click", () => {
   const slot = Number(get("t3kSlot").value) || 1;
   transferLibrary(2, async (heartbeat) => {
     await heartbeat();
-    const entry = await t3kDownloadToSlot(id, slot, prepareSlotFile,
+    const tone = await t3kTone(id).catch(() => null);
+    const rawName = String(tone?.name || tone?.title || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, " ").trim().slice(0, 23);
+    const prepare = async (file, target) => {
+      const entry = await prepareSlotFile(file, target);
+      if (rawName) patchToneName(entry.data, rawName);
+      return entry;
+    };
+    const entry = await t3kDownloadToSlot(id, slot, prepare,
       async (fileEntry, progress) => {
         await deleteSlotFile(link, slot);
         await sendSlotFile(link, fileEntry, details => progress?.(details));
       },
       message => toast(message));
-    return `TONE3000: ${entry.name} gravado no slot ${String(slot).padStart(2, "0")}.`;
+    return `TONE3000: ${rawName || entry.name} gravado no slot ${String(slot).padStart(2, "0")}.`;
   });
 });
 t3kHandleCallback().then(() => { get("t3kClient").value = t3kClient(); toast("TONE3000 conectado"); })
