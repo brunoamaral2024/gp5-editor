@@ -108,7 +108,8 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .workspace-tabs { margin:.75rem 0; }
 .live-strip { display:flex; flex-wrap:wrap; align-items:center; gap:.55rem; margin-bottom:.7rem; }
 .live-strip fieldset { margin:0; }
-.live-strip .preset-bar { flex:1 1 12rem; max-width:20rem; padding:0 .45rem .4rem; }
+.live-strip .preset-bar { flex:1 1 16rem; max-width:34rem; padding:0 .45rem .4rem; }
+.preset-full { display:block; margin-top:.2rem; font-size:.78rem; color:var(--muted); overflow-wrap:anywhere; }
 .live-strip #sceneBar { flex:1 1 14rem; max-width:24rem; }
 .live-strip .scene-buttons { gap:.3rem; padding:0 .4rem .4rem; }
 .live-strip .board-tools { margin:0; }

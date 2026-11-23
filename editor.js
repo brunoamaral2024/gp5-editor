@@ -712,6 +712,9 @@ async function refresh() {
   syncOrder(values[orderId]);
   fitSlotSelect(get("capture"), "tone", values[7], "Captura interna");
   fitSlotSelect(get("quickPreset"), "tone", values[7], "Captura interna");
+  const presetName = get("quickPreset").selectedOptions[0]?.text ?? "";
+  get("presetFullName").textContent = presetName;
+  get("quickPreset").title = presetName;
   fitSlotSelect(get("ir"), "cab", values[6], "Nenhum IR");
   const model = values[63] ? get("ampVoice").options[values[63]]?.text : get("capture").selectedOptions[0]?.text;
   const outputMode = liveTools ? values[bypassId] : 0;
