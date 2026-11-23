@@ -347,7 +347,6 @@ export async function moveSlotFile(link, from, to) {
 export async function deleteSlotFile(link, slot) {
   const name = `tone-${String(slot).padStart(2, "0")}`;
   const file = (await listFiles(link)).files.find(entry => entry.name === name && entry.owner === OWNER);
-  if (!file) throw new Error(`O slot ${slot} está vazio.`);
-  await deleteFile(link, OWNER, name);
+  if (file) await deleteFile(link, OWNER, name);
   return slot;
 }

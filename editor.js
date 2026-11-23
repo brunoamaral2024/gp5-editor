@@ -1,7 +1,7 @@
 import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import14";
+import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import15";
 import { t3kClient, t3kConnect, t3kDownloadFile, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken } from "./t3k.js?v=9";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
@@ -1293,8 +1293,7 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
         const targetSlot = Number(entry.name.slice(-2));
         if (installed.some(item => item.kind === kind && item.slot === targetSlot)) {
           await deleteSlotFile(link, targetSlot);   /* replace an existing capture */
-        }
-        await sendSlotFile(link, entry, details => progress(`${i + 1}/${entries.length} · ${details}`));
+        }        await sendSlotFile(link, entry, details => progress(`${i + 1}/${entries.length} · ${details}`));
         written.push(entry.name.slice(-2));
       }
     } catch (error) {
