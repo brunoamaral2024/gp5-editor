@@ -46,7 +46,10 @@
       <select id="boardFootMode">
         <option value="0">Stomp</option>
         <option value="1">Cenas</option>
-        <option value="2" disabled>Preset</option>
+        <option value="2">0-99</option>
+        <option value="3">0-9</option>
+        <option value="4">A-Z</option>
+        <option value="5">Tuner</option>
       </select>
     </label>
     <div class="board-tools" id="studioTools" hidden>
@@ -376,7 +379,7 @@
         <label for="scene" hidden>Cena do timbre</label>
         <select id="scene" hidden><option value="0">Base</option><option value="1">Solo</option><option value="2">Ambiente</option></select>
         <label for="sceneMode">Toque curto no footswitch</label>
-        <select id="sceneMode"><option value="0">Liga/desliga delay</option><option value="1">Próxima cena</option><option value="2" disabled>Próximo preset</option></select>
+        <select id="sceneMode"><option value="0">Stomp (delay)</option><option value="1">Próxima cena</option><option value="2">0-99</option><option value="3">0-9</option><option value="4">A-Z</option><option value="5">Afinador</option></select>
         <label for="midiSource">Entrada MIDI do Chocolate</label>
         <select id="midiSource"><option value="">Selecione uma entrada</option></select>
         <label for="midiChannel">Canal MIDI</label>

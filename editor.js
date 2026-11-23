@@ -790,8 +790,9 @@ connect.addEventListener("click", async () => {
       }
     }
     const footDescriptor = await request(0x12, 28, 0);
-    get("sceneMode").querySelector('option[value="2"]').disabled = footDescriptor[2] !== 1 || footDescriptor[11] < 2;
-    get("boardFootMode").querySelector('option[value="2"]').disabled = get("sceneMode").querySelector('option[value="2"]').disabled;
+    const footMax = footDescriptor[2] === 1 ? (footDescriptor[11] | footDescriptor[12] << 8) : 2;
+    for (const select of [get("sceneMode"), get("boardFootMode")])
+      for (const option of select.options) option.disabled = Number(option.value) > footMax;
     const sceneDescriptor = await request(0x12, 27, 0).catch(() => null);
     if (sceneDescriptor?.[2] === 1) syncSceneButtons(sceneDescriptor[11] | sceneDescriptor[12] << 8);
     const bypassDescriptor = await request(0x12, bypassId, 0);
