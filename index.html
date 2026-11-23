@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#151820">
   <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
-  <link rel="stylesheet" href="./style.css?v=import6">
-  <script type="module" src="./editor.js?v=import9"></script>
+  <link rel="stylesheet" href="./style.css?v=import7">
+  <script type="module" src="./editor.js?v=import10"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -199,7 +199,7 @@
             <p id="ampOutputNote" class="note" role="status" hidden></p>
             <button id="activateAmp" class="secondary" type="button" hidden>Ativar amplificador</button>
             <label for="ampGain">Ganho de entrada <output id="ampGainValue">0 dB</output></label>
-            <input id="ampGain" type="range" min="-12" max="12" value="0" data-unit=" dB">
+            <input id="ampGain" type="range" min="-24" max="24" value="0" data-unit=" dB">
             <label for="ampLevel">Nível de saída <output id="ampLevelValue">0 dB</output></label>
             <input id="ampLevel" type="range" min="-12" max="12" value="0" data-unit=" dB">
             <label for="ampTone">Tone <output id="ampToneValue">0 dB</output></label>
@@ -516,7 +516,7 @@
       <legend>Saída</legend>
       <div class="output-controls">
         <label for="globalVolume">Volume global <output id="globalVolumeValue">100%</output></label>
-        <input id="globalVolume" type="range" min="0" max="100" value="100" data-unit="%">
+        <input id="globalVolume" type="range" min="0" max="200" value="100" data-unit="%">
       </div>
     </fieldset>
   </main>

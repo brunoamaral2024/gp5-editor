@@ -7,9 +7,9 @@ import { deleteFile, listFiles, readFile, sectorsFor, TOTAL_SECTORS, writeFile }
 const FORMAT = "gp5-nam-library";
 const MAX_BYTES = 512 * 1024;
 const OWNER = fourcc("AMPB");
-const RECORD_LENGTHS = new Map([[fourcc("AMPT"), 992], [0x53434e31, 992], [0x53434e32, 992], [OWNER, 4]]);
+const RECORD_LENGTHS = new Map([[fourcc("AMPT"), 992], [0x53434e31, 992], [0x53434e32, 992], [0x53434e33, 992], [OWNER, 4]]);
 const fileName = /^(tone|cab)-(0[1-9]|[12][0-9]|30)$/;
-for (let i = 0; i < 3; i++) RECORD_LENGTHS.set(0x45513030 + i, 279);
+for (let i = 0; i < 4; i++) RECORD_LENGTHS.set(0x45513030 + i, 279);
 
 function encode(bytes) {
   let raw = "";
@@ -44,7 +44,7 @@ function checkAudio(name, bytes) {
 }
 
 function normalizeEqBank(id, bytes) {
-  if (id < 0x45513030 || id > 0x45513032) return bytes;
+  if (id < 0x45513030 || id > 0x45513033) return bytes;
   if (bytes?.length === 279) return bytes;
   if (bytes && bytes.length !== 248) throw new Error("Banco de EQ incompatível.");
   const merged = new Uint8Array(279);
@@ -67,7 +67,7 @@ export async function parseLibrary(file) {
   if (file.size > MAX_BYTES) throw new Error("O arquivo excede o tamanho máximo de uma biblioteca da GP-5.");
   const data = JSON.parse(await file.text());
   if (data?.format !== FORMAT || data.version !== 1 || !Array.isArray(data.files) || !Array.isArray(data.records)
-      || data.files.length > 60 || ![4, RECORD_LENGTHS.size].includes(data.records.length))
+      || data.files.length > 60 || ![4, 7, RECORD_LENGTHS.size].includes(data.records.length))
     throw new Error("Selecione uma biblioteca .gp5library exportada por este editor.");
   const files = new Map(), records = new Map();
   let occupied = 0;
@@ -93,7 +93,11 @@ export async function parseLibrary(file) {
   }
   for (const id of RECORD_LENGTHS.keys()) {
     if (records.has(id)) continue;
-    if (id < 0x45513030 || id > 0x45513032) throw new Error("Faltam registros de presets.");
+    if (id === 0x53434e33) {                      /* a library from the three-scene firmware */
+      records.set(id, new Uint8Array(992));
+      continue;
+    }
+    if (id < 0x45513030 || id > 0x45513033) throw new Error("Faltam registros de presets.");
     records.set(id, normalizeEqBank(id));
   }
   return { files, records };

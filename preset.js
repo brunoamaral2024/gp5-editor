@@ -33,7 +33,7 @@ export async function loadPreset(file) {
     for (const [key, value] of Object.entries(data.values)) {
       if (key === "50" || key === "51") continue;
       const id = Number(key);
-      const min = id === 72 || id >= 80 ? 0 : -12;
+      const min = id === 72 || id >= 80 ? 0 : id === 34 ? -24 : -12;
       const max = id === 72 || id >= 81 ? 1 : id === 80 ? 3 : id >= 67 ? 12 : 5039;
       if (!localIds.includes(id) || !Number.isInteger(value) || value < min || value > max)
         throw new Error("O preset contém parâmetros inválidos.");

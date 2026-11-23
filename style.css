@@ -83,7 +83,7 @@ header { position:sticky; top:0; z-index:2; }
 .library-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; align-items:start; margin:1rem 0; }
 .library-grid fieldset { margin:0; }
 .slot-list { display:grid; margin:0; padding:0; max-height:22rem; overflow:auto; list-style:none; }
-.slot-list li { display:grid; grid-template-columns:2.2rem minmax(0,1fr) auto; align-items:center; gap:.6rem; padding:.35rem .25rem; min-height:2.65rem; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+.slot-list li { display:grid; grid-template-columns:3.4rem minmax(0,1fr) auto; align-items:center; gap:.6rem; padding:.35rem .25rem; min-height:2.65rem; border-top:1px solid var(--line); overflow-wrap:anywhere; }
 .slot-list code { color:var(--accent); font-size:.9rem; }
 .slot-list .secondary { min-height:36px; padding:.3rem .5rem; font-size:.83rem; }
 .library-grid input[type="file"],[data-library-panel] input[type="file"] { max-width:100%; }

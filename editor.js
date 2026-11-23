@@ -335,7 +335,7 @@ function controllerMessage({data}) {
   const type = data[0] & 240;
   if (type === 0xc0) {
     const presets = current[28] === 2;
-    if (data[1] > (presets ? 29 : 2)) return;
+    if (data[1] > (presets ? 29 : 3)) return;
     clearExpression();
     run(async () => {
       if (!link) return;
@@ -887,7 +887,7 @@ function fitSlotSelect(select, kind, slot, emptyLabel, rebuild = false) {
   if (rebuild) {
     select.replaceChildren(new Option(emptyLabel, "0"));
     for (const entry of installed.filter(item => item.kind === kind))
-      select.add(new Option(`${String(entry.slot).padStart(2, "0")} · ${entry.name}`, entry.slot));
+      select.add(new Option(`B${Math.ceil(entry.slot / 4)} · ${String(entry.slot).padStart(2, "0")} · ${entry.name}`, entry.slot));
   }
   if (![...select.options].some(option => Number(option.value) === slot))
     select.add(new Option(`Slot ${slot}`, slot));
@@ -951,7 +951,7 @@ function showSlots() {
     const number = document.createElement("code");
     const name = document.createElement("span");
     const select = document.createElement("button");
-    number.textContent = String(slot).padStart(2, "0");
+    number.textContent = `B${Math.ceil(slot / 4)}·${String(slot).padStart(2, "0")}`;
     name.textContent = stored ?? (slotsRead ? "Vazio" : link ? "…" : "–");
     if (!stored) name.className = "slot-empty";
     select.className = "secondary";
