@@ -305,3 +305,14 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
   .effect-panel { scroll-margin-top:calc(var(--header-h, 3.7rem) + 3.4rem); }
   .tuner-panel { max-width:none; }
 }
+
+@media (max-width: 760px) {
+  .workspace-tabs { position:sticky; top:0; z-index:8; flex-wrap:nowrap; overflow-x:auto; background:#0d1117; padding:.35rem 0; }
+  .workspace-tabs button, .library-tabs button { min-height:46px; flex:0 0 auto; }
+  button, select, input:not([type="range"]):not([type="checkbox"]) { min-height:46px; font-size:1rem; }
+  .chain { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
+  .chain .pedal-toggle { min-height:92px; }
+  .slot-actions button { flex:1 1 45%; }
+  .limits { gap:.5rem; }
+  .tone { gap:.55rem; }
+}
