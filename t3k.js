@@ -108,11 +108,12 @@ export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
         throw new Error(`TONE3000: tone sem modelos (chaves: ${Object.keys(tone).join(", ") || "?"})`);
     }
     const field = (item, name) => item?.[name] ?? item?.model?.[name] ?? item?.meta?.[name] ?? item?.metadata?.[name];
-    const isA2 = model => [2, "2", "A2", "a2"].includes(field(model, "architecture"));
-    const format = model => String(field(model, "format") || "");
+    const architecture = model => String(field(model, "architecture_version") ?? field(model, "architecture") ?? "");
+    const isA2 = model => architecture(model).startsWith("2") || architecture(model) === "A2";
+    const format = model => String(field(model, "format") || model?.metadata?.format || "");
     const model = models.find(item => isA2(item) && /nam/i.test(format(item))) || models.find(isA2);
     if (!model) {
-        const found = models.map(item => `${field(item, "architecture") ?? "?"}/${format(item) || "?"}`).join(", ") || "nenhum modelo";
+        const found = models.map(item => `${architecture(item) || "?"}/${format(item) || "?"}`).join(", ") || "nenhum modelo";
         const keys = models[0] ? Object.keys(models[0]).join(", ") : "";
         throw new Error(`TONE3000: nenhum modelo A2 (encontrado: ${found}; campos: ${keys || "?"}; A1 não roda na GP-5).`);
     }
