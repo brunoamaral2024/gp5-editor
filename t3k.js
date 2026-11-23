@@ -107,7 +107,7 @@ export function t3kIdFromInput(text) {
     return numbers ? numbers[numbers.length - 1] : "";   /* the trailing id, not a year inside the slug */
 }
 
-export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
+async function fetchModelBlob(toneId) {
     const models = await t3kModels(toneId);
     if (!models.length) {
         const tone = await t3kTone(toneId).catch(() => ({}));
@@ -127,7 +127,15 @@ export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
     if (!url) throw new Error("TONE3000: modelo sem URL de download.");
     const response = await fetch(url, { headers: { Authorization: `Bearer ${t3kToken()}` } });
     if (!response.ok) throw new Error(`TONE3000: download ${response.status}`);
-    const blob = await response.blob();
+    return response.blob();
+}
+
+export async function t3kDownloadFile(toneId) {
+    return fetchModelBlob(toneId);
+}
+
+export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
+    const blob = await fetchModelBlob(toneId);
     if (progress) progress("Baixado; convertendo para A2-Lite…");
     const file = new File([blob], `t3k-${toneId}.nam`, { type: "application/json" });
     const entry = await prepare(file, slot);

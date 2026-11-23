@@ -2,7 +2,7 @@ import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import14";
-import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken } from "./t3k.js?v=8";
+import { t3kClient, t3kConnect, t3kDownloadFile, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken } from "./t3k.js?v=9";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -1508,6 +1508,18 @@ get("t3kSearch").addEventListener("click", () => {
       item.append(button);
       results.append(item);
     }
+  }).catch(error => toast(error.message));
+});
+get("t3kSaveFile").addEventListener("click", () => {
+  const id = t3kIdFromInput(get("t3kTone").value);
+  if (!id) { toast("Informe o ID ou o link do tone."); return; }
+  if (!t3kToken()) { toast("Conecte a TONE3000 primeiro."); return; }
+  t3kDownloadFile(id).then(blob => {
+    const url = URL.createObjectURL(blob);
+    const link = Object.assign(document.createElement("a"), { href: url, download: `tone-${id}.nam` });
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast("Arquivo .nam baixado. Importe pelo computador.");
   }).catch(error => toast(error.message));
 });
 get("t3kDownload").addEventListener("click", () => {
