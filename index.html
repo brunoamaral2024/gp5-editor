@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
   <link rel="stylesheet" href="./style.css?v=import7">
-  <script type="module" src="./editor.js?v=import12"></script>
+  <script type="module" src="./editor.js?v=import13"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -115,6 +115,13 @@
           <option value="4">1/16</option>
         </select>
         <output id="interval" for="bpm division">500 ms por repetição</output>
+        <label for="delayModel">Modelo do delay</label>
+        <select id="delayModel">
+          <option value="0">Digital</option>
+          <option value="1">Analog</option>
+          <option value="2">Tape</option>
+          <option value="3">Dual</option>
+        </select>
       </div>
     </fieldset>
     <details class="utility" id="sceneTools">

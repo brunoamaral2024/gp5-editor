@@ -486,6 +486,7 @@ function showValues() {
   for (const button of document.querySelectorAll("[data-scene]"))
     button.setAttribute("aria-pressed", String(button.dataset.scene === get("scene").value));
   if (get("boardFootMode") !== document.activeElement) get("boardFootMode").value = String(current[28] ?? 0);
+  if (get("delayModel") !== document.activeElement) get("delayModel").value = String(current[78] ?? 0);
   get("midiPrograms").textContent = current[28] === 2
     ? "PC 0 a 29 selecionam os presets NAM 01 a 30."
     : "PC 0, 1 e 2 selecionam Base, Solo e Ambiente.";
@@ -585,6 +586,16 @@ get("boardFootMode").addEventListener("change", () => {
   get("sceneMode").dispatchEvent(new Event("change"));
   toast(`Foot: ${get("boardFootMode").selectedOptions[0].textContent}`);
 });
+get("delayModel").addEventListener("change", () => {
+  if (!link || libraryBusy) return;
+  run(async () => {
+    if (!link) return;
+    const model = Number(get("delayModel").value);
+    await writeParam(78, model);
+    current[78] = model;
+    toast(`Delay: ${get("delayModel").selectedOptions[0].textContent}`);
+  });
+});
 
 function syncSceneButtons(max) {
   const container = get("sceneButtons");
@@ -664,6 +675,8 @@ async function readParameters() {
 async function refresh() {
   const values = await readParameters();
   current = values;
+  const modelReply = await request(0x11, 78, 0, 1).catch(() => null);
+  current[78] = modelReply?.[2] === 1 ? modelReply[3] : 0;
   syncOrder(values[orderId]);
   fitSlotSelect(get("capture"), "tone", values[7], "Captura interna");
   fitSlotSelect(get("quickPreset"), "tone", values[7], "Captura interna");
