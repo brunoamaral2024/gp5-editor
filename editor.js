@@ -30,7 +30,7 @@ function setSaveState(text) {
     saveTimer = setTimeout(() => { if (element.textContent === "Salvo") element.textContent = ""; }, 2400);
 }
 const setDisabled = (disabled) => {
-  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput"), get("sceneToolsField"), get("t3k")]) panel.disabled = disabled;
+  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput"), get("sceneToolsField")]) panel.disabled = disabled;
   const indicator = get("connectionState");
   indicator.dataset.online = String(!!link && !disabled);
   indicator.textContent = link && libraryBusy ? "Transferindo" : disabled ? "Desconectada" : "GP-5 conectada";
