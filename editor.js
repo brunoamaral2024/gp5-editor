@@ -833,7 +833,7 @@ connect.addEventListener("click", async () => {
       const max = reply[11] | reply[12] << 8;
       const expected = {23: 62, 51: 4, 61: 1, 63: 6};
       if (reply[2] !== 1 || name !== field.name || group !== field.group || (expected[id] !== undefined && max !== expected[id]))
-        throw new Error("Esta versão do editor precisa do firmware GP-5 NAM Studio.");
+        throw new Error(`Esta versão do editor precisa do firmware GP-5 NAM Studio. (id ${id}: ${name}/${group}, max ${max}, esperado ${expected[id] ?? "livre"})`);
       if (id === 45) {
         for (const option of field.input.options) option.hidden = option.disabled = Number(option.value) > max;
       }
