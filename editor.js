@@ -1461,7 +1461,13 @@ for (let i = 1; i <= 30; i++) {
   option.textContent = `Slot ${String(i).padStart(2, "0")}`;
   get("t3kSlot").append(option);
 }
+function t3kRefreshState() {
+  const connected = Boolean(t3kToken());
+  get("t3kConnect").textContent = connected ? "Conectado" : "Conectar";
+  get("t3kConnect").disabled = connected;
+}
 get("t3kClient").value = t3kClient();
+t3kRefreshState();
 get("t3kConnect").addEventListener("click", () => {
   t3kConnect(get("t3kClient").value.trim()).catch(error => toast(error.message));
 });
@@ -1485,6 +1491,7 @@ window.addEventListener("message", event => {
   if (event.origin !== location.origin) return;
   if (event.data?.type === "t3k-token") {
     t3kStoreTokens(event.data.tokens);
+    t3kRefreshState();
     toast("TONE3000 conectado");
   } else if (event.data?.type === "t3k-error") {
     toast(`TONE3000: ${event.data.message}`);
