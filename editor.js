@@ -1051,6 +1051,8 @@ function showSlots() {
   list.replaceChildren();
   if (libraryTab === "presets") return;
   const query = get("slotFilter").value.trim().toLowerCase();
+  const favorites = new Set(JSON.parse(localStorage.getItem("gp5-fav-tone") || "[]"));
+  const favOnly = get("favOnly").checked;
   const entries = installed.filter(item => item.kind === libraryTab);
   const slots = new Map(entries.map(item => [item.slot, item.name]));
   const label = libraryTab === "tone" ? "capturas" : "IRs";
@@ -1058,6 +1060,7 @@ function showSlots() {
   let shown = 0;
   for (let slot = 1; slot <= 30; slot++) {
     const stored = slots.get(slot);
+    if (favOnly && !favorites.has(slot)) continue;
     if (query && !String(slot).includes(query) && !stored?.toLowerCase().includes(query)) continue;
     shown++;
     const row = document.createElement("li");
@@ -1083,6 +1086,19 @@ function showSlots() {
     actions.className = "slot-actions";
     actions.append(select);
     if (stored) {
+      const star = document.createElement("button");
+      star.className = "secondary star";
+      star.type = "button";
+      star.textContent = favorites.has(slot) ? "★" : "☆";
+      star.setAttribute("aria-label", `Favoritar ${stored}`);
+      star.addEventListener("click", () => {
+        const list = new Set(JSON.parse(localStorage.getItem("gp5-fav-tone") || "[]"));
+        if (list.has(slot)) list.delete(slot);
+        else list.add(slot);
+        localStorage.setItem("gp5-fav-tone", JSON.stringify([...list]));
+        showSlots();
+      });
+      actions.prepend(star);
       if (libraryTab === "tone") {
         const rename = document.createElement("button");
         rename.className = "secondary";
@@ -1199,6 +1215,7 @@ for (const button of document.querySelectorAll("[data-view]"))
 for (const button of document.querySelectorAll("[data-library-tab]"))
   button.addEventListener("click", () => setLibraryTab(button.dataset.libraryTab));
 get("slotFilter").addEventListener("input", showSlots);
+get("favOnly").addEventListener("change", showSlots);
 get("openCaptures").addEventListener("click", () => { setLibraryTab("tone"); setView("library"); });
 get("openIrs").addEventListener("click", () => { setLibraryTab("cab"); setView("library"); });
 get("reloadSlots").addEventListener("click", () => run(() => link && refreshNamedSlots()));

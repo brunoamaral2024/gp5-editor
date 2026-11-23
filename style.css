@@ -231,6 +231,8 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
 .slot-list li.slot-free { opacity:.55; }
 .slot-list li.slot-free code { color:var(--muted); }
 .slot-list li.slot-free .slot-name { font-style:italic; }
+.fav-only { display:flex; align-items:center; gap:.4rem; margin:.1rem 0 .35rem; font-size:.85rem; color:var(--muted); }
+.star { font-size:1rem; line-height:1; }
 @media (max-width: 760px) {
   .slot-list li { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; }
   .slot-list li > code { flex:0 0 auto; }

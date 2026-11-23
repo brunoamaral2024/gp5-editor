@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
   <link rel="stylesheet" href="./style.css?v=import7">
-  <script type="module" src="./editor.js?v=import24"></script>
+  <script type="module" src="./editor.js?v=import25"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -489,6 +489,7 @@
             <div class="slot-tools"><span id="slotCount" class="note"></span><button id="reloadSlots" class="secondary" type="button" disabled>Atualizar</button></div>
           </div>
           <input id="slotFilter" class="slot-filter" type="search" placeholder="Filtrar por nome ou número do slot" aria-label="Filtrar slots por nome ou número">
+          <label class="fav-only"><input id="favOnly" type="checkbox"> Só favoritos</label>
           <ol id="slotList" class="slot-list"></ol>
         </section>
         <fieldset id="slotUpload" disabled>
