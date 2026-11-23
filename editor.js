@@ -1,4 +1,3 @@
-import { installCaptureBank } from "./capture-bank.js";
 import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
@@ -38,8 +37,6 @@ const setDisabled = (disabled) => {
   if (disabled) lastTap = undefined;
   get("reloadSlots").disabled = disabled;
   for (const id of ["chainBypass", "tunerToggle", "mapVolume", "driveOnly", "visorPrev", "visorNext", "saveScene"]) get(id).disabled = disabled;
-  get("bankSendFiles").disabled = disabled;
-  get("bankSend").disabled = disabled;
   get("boardFootMode").disabled = disabled;
   showValues();
 };
@@ -1440,7 +1437,6 @@ folderFile.addEventListener("change", async () => {
   }
   await prepareImport(files);
 });
-installCaptureBank((files, slot, progress) => sendFiles(files, slot, "tone", progress));
 
 const presetStatus = get("presetStatus");
 let valetonTemplate;
@@ -1523,7 +1519,10 @@ get("t3kDownload").addEventListener("click", () => {
   transferLibrary(2, async (heartbeat) => {
     await heartbeat();
     const entry = await t3kDownloadToSlot(id, slot, prepareSlotFile,
-      (fileEntry, progress) => sendSlotFile(link, fileEntry, details => progress?.(details)),
+      async (fileEntry, progress) => {
+        await deleteSlotFile(link, slot);
+        await sendSlotFile(link, fileEntry, details => progress?.(details));
+      },
       message => toast(message));
     return `TONE3000: ${entry.name} gravado no slot ${String(slot).padStart(2, "0")}.`;
   });

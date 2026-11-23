@@ -494,13 +494,10 @@
             <button id="slotPicker" type="button">Escolher capturas .nam</button>
             <button id="folderPicker" type="button" class="secondary">Escolher pasta</button>
             <input id="folderFiles" class="file-input" type="file" webkitdirectory multiple>
-            <p class="note">Os arquivos selecionados vão direto para slots livres da GP-5. No computador, <strong>Escolher pasta</strong> lê uma pasta inteira; no celular, use <strong>Escolher capturas</strong> e selecione os .nam. Só entram capturas NAM <strong>A2-Lite a 48 kHz</strong> — A1 e A2 sem A2-Lite são recusadas com o motivo.</p>
-            <details id="manualSlot">
-              <summary>Escolher slot manualmente</summary>
-              <label for="slotNumber">Slot de destino</label>
-              <input id="slotNumber" type="number" min="1" max="30" value="1">
-              <button id="sendSlot" class="secondary" type="button">Escolher e gravar</button>
-            </details>
+            <p class="note">Só NAM A2-Lite 48 kHz. O arquivo vai para o slot escolhido; se estiver ocupado, a captura antiga é substituída.</p>
+            <label for="slotNumber">Slot de destino (1–30)</label>
+            <input id="slotNumber" type="number" min="1" max="30" value="1">
+            <button id="sendSlot" class="secondary" type="button">Escolher e gravar no slot</button>
           </div>
         </fieldset>
       </div>
@@ -515,25 +512,6 @@
           </div>
         </div>
       </fieldset>
-      <details class="utility" data-library-panel="tone">
-    <summary>Banco de capturas do navegador</summary>
-    <fieldset>
-      <legend>Banco NAM A2 deste navegador</legend>
-      <div class="tone">
-        <label for="bankFiles">Importar capturas NAM A2</label>
-        <input id="bankFiles" type="file" accept=".nam" multiple>
-        <button id="bankImport" type="button">Adicionar ao banco</button>
-        <button id="bankSendFiles" type="button" disabled>Enviar arquivos selecionados à GP-5</button>
-        <label for="bankCapture">Captura guardada</label>
-        <select id="bankCapture"><option value="">Selecione uma captura</option></select>
-        <label for="bankSlot">Slot de destino na GP-5 (1–30)</label>
-        <input id="bankSlot" type="number" min="1" max="30" value="1">
-        <button id="bankSend" type="button">Enviar à GP-5</button>
-        <button id="bankRemove" type="button">Remover do banco local</button>
-        <p class="note" id="bankStatus" role="status">Até 50 capturas neste navegador.</p>
-      </div>
-    </fieldset>
-      </details>
       <div data-library-panel="presets" class="library-grid" hidden>
         <fieldset id="library" disabled><legend>Presets da cena</legend><div class="tone">
         <label for="presetFile">Preset individual (.gp5preset ou .prst)</label>
