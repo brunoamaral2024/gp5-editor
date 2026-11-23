@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>GP-5 · Editor de timbres</title>
   <link rel="stylesheet" href="./style.css?v=import7">
-  <script type="module" src="./editor.js?v=import22"></script>
+  <script type="module" src="./editor.js?v=import23"></script>
 </head>
 <body>
   <header><span class="brand">GP-5 <span> / </span> EDITOR DE TIMBRES</span><div class="connection"><span id="connectionState" role="status">Desconectada</span><button id="connect" type="button">Conectar GP-5</button></div></header>
@@ -561,6 +561,8 @@
       <div class="output-controls">
         <label for="globalVolume">Volume global <output id="globalVolumeValue">100%</output></label>
         <input id="globalVolume" type="range" min="0" max="200" value="100" data-unit="%">
+        <label for="tunerRef">A4 do afinador</label>
+        <select id="tunerRef"></select>
       </div>
     </fieldset>
   </main>

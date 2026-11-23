@@ -486,6 +486,7 @@ function showValues() {
   if (get("boardFootMode") !== document.activeElement) get("boardFootMode").value = String(current[28] ?? 0);
   if (get("delayModel") !== document.activeElement) get("delayModel").value = String(current[78] ?? 0);
   if (get("gateModel") !== document.activeElement) get("gateModel").value = String(current[79] ?? 0);
+  if (get("tunerRef") !== document.activeElement) get("tunerRef").value = String(current[92] ?? 440);
   get("midiPrograms").textContent = current[28] === 2
     ? "PC 0 a 29 selecionam os presets NAM 01 a 30."
     : "PC 0, 1 e 2 selecionam Base, Solo e Ambiente.";
@@ -707,6 +708,8 @@ async function refresh() {
   current[78] = modelReply?.[2] === 1 ? modelReply[3] : 0;
   const gateReply = await request(0x11, 79, 0, 1).catch(() => null);
   current[79] = gateReply?.[2] === 1 ? gateReply[3] : 0;
+  const refReply = await request(0x11, 92, 0, 1).catch(() => null);
+  current[92] = refReply?.[2] === 1 ? refReply[3] : 440;
   syncOrder(values[orderId]);
   fitSlotSelect(get("capture"), "tone", values[7], "Captura interna");
   fitSlotSelect(get("quickPreset"), "tone", values[7], "Captura interna");
@@ -1478,6 +1481,22 @@ for (let i = 1; i <= 30; i++) {
   option.textContent = `Slot ${String(i).padStart(2, "0")}`;
   get("t3kSlot").append(option);
 }
+for (let hz = 430; hz <= 450; hz++) {
+  const option = document.createElement("option");
+  option.value = String(hz);
+  option.textContent = `${hz} Hz`;
+  get("tunerRef").append(option);
+}
+get("tunerRef").addEventListener("change", () => {
+  if (!link || libraryBusy) return;
+  run(async () => {
+    if (!link) return;
+    const hz = Number(get("tunerRef").value);
+    await writeParam(92, hz);
+    current[92] = hz;
+    toast(`A4 = ${hz} Hz`);
+  });
+});
 function t3kRefreshState() {
   const connected = Boolean(t3kToken());
   get("t3kConnect").textContent = connected ? "Conectado" : "Conectar";
