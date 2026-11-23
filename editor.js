@@ -2,7 +2,7 @@ import { installCaptureBank } from "./capture-bank.js";
 import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import13";
+import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import14";
 import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken } from "./t3k.js?v=8";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
@@ -1120,6 +1120,22 @@ function showSlots() {
           });
         });
         actions.prepend(move);
+        const erase = document.createElement("button");
+        erase.className = "secondary";
+        erase.type = "button";
+        erase.textContent = "Apagar";
+        erase.setAttribute("aria-label", `Apagar ${stored}`);
+        erase.disabled = !link;
+        erase.addEventListener("click", () => {
+          if (!link || libraryBusy) return;
+          if (!confirm(`Apagar a captura "${stored}" do slot ${slot}?`)) return;
+          transferLibrary(2, async (heartbeat) => {
+            await heartbeat();
+            await deleteSlotFile(link, slot);
+            return `Slot ${String(slot).padStart(2, "0")} apagado.`;
+          });
+        });
+        actions.prepend(erase);
       }
       const use = document.createElement("button");
       const kind = libraryTab;
