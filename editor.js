@@ -1,8 +1,6 @@
-import { describeMidi } from "./midi-format.js";
-import { validateNamA2 } from "./convert-nam.js";
+import { installCaptureBank } from "./capture-bank.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { deleteSlotFile, exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, patchToneName, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import16";
-import { t3kClient, t3kConnect, t3kDownloadFile, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kSearch, t3kStoreTokens, t3kToken, t3kTone } from "./t3k.js?v=10";
+import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -11,33 +9,17 @@ const panels = [...document.querySelectorAll("[data-panel]")];
 const blocks = [...document.querySelectorAll("[data-block]")];
 const selectedToggle = get("toggleSelectedEffect");
 let selectedBlock = blocks.find(block => block.dataset.block === "amp");
-let toastTimer;
-function toast(message) {
-  const element = get("toast");
-  element.textContent = message;
-  element.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { element.hidden = true; }, 2600);
-}
-let saveTimer;
-function setSaveState(text) {
-  const element = get("saveState");
-  if (!element) return;
-  element.textContent = text;
-  clearTimeout(saveTimer);
-  if (text === "Salvo")
-    saveTimer = setTimeout(() => { if (element.textContent === "Salvo") element.textContent = ""; }, 2400);
-}
 const setDisabled = (disabled) => {
-  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput"), get("sceneToolsField")]) panel.disabled = disabled;
+  for (const panel of [...panels, get("performance"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput")]) panel.disabled = disabled;
   const indicator = get("connectionState");
   indicator.dataset.online = String(!!link && !disabled);
   indicator.textContent = link && libraryBusy ? "Transferindo" : disabled ? "Desconectada" : "GP-5 conectada";
   selectedToggle.disabled = disabled;
   if (disabled) lastTap = undefined;
   get("reloadSlots").disabled = disabled;
-  for (const id of ["chainBypass", "tunerToggle", "mapVolume", "driveOnly", "visorPrev", "visorNext", "saveScene"]) get(id).disabled = disabled;
-  get("boardFootMode").disabled = disabled;
+  for (const id of ["chainBypass", "tunerToggle", "mapVolume", "driveOnly"]) get(id).disabled = disabled;
+  get("bankSendFiles").disabled = disabled;
+  get("bankSend").disabled = disabled;
   showValues();
 };
 get("controls").addEventListener("submit", (event) => event.preventDefault());
@@ -57,35 +39,7 @@ function selectEffect(block) {
 }
 
 for (const block of blocks)
-  block.querySelector("[data-effect-edit]").addEventListener("click", () => {
-    selectEffect(block);
-    if (window.matchMedia("(max-width: 700px)").matches)
-      get("effectPanel").scrollIntoView({ behavior: "smooth", block: "start" });
-    toggleEffect(block.dataset.block);
-  });
-
-for (const block of blocks) {
-  const power = document.createElement("button");
-  power.type = "button";
-  power.className = "pedal-power";
-  power.title = "Ligar/desligar este bloco";
-  power.setAttribute("aria-label", "Ligar ou desligar o bloco");
-  power.textContent = "⏻";
-  power.addEventListener("click", (event) => {
-    event.stopPropagation();
-    toggleEffect(block.dataset.block);
-  });
-  block.append(power);
-}
-
-const headerElement = document.querySelector("header");
-function syncHeaderHeight() {
-  if (headerElement) document.documentElement.style.setProperty("--header-h", `${Math.ceil(headerElement.getBoundingClientRect().height)}px`);
-}
-if (headerElement && "ResizeObserver" in window) {
-  new ResizeObserver(syncHeaderHeight).observe(headerElement);
-  syncHeaderHeight();
-}
+  block.querySelector("[data-effect-edit]").addEventListener("click", () => selectEffect(block));
 
 selectedToggle.addEventListener("click", () => toggleEffect(selectedBlock.dataset.block));
 
@@ -136,6 +90,10 @@ const fields = [
   { id: 34, name: "NAM Input", group: "NAM", input: get("ampGain") },
   { id: 35, name: "NAM Level", group: "NAM", input: get("ampLevel") },
   { id: 36, name: "NAM Tone", group: "NAM", input: get("ampTone") },
+  { id: 64, name: "Amp Bass", group: "NAM", input: get("ampBass") },
+  { id: 65, name: "Amp Mid", group: "NAM", input: get("ampMid") },
+  { id: 66, name: "Amp Treble", group: "NAM", input: get("ampTreble") },
+  { id: 67, name: "Presence", group: "NAM", input: get("ampPresence") },
   { id: 37, name: "EQ Mode", group: "EQ", input: get("eqMode") },
   { id: 38, name: "EQ 1", group: "EQ", input: get("eq1") },
   { id: 39, name: "EQ 2", group: "EQ", input: get("eq2") },
@@ -162,13 +120,14 @@ const bypassId = 29;
 const tunerId = 30;
 const tunerFrequencyId = 66;
 const extraFields = ["driveGain", "driveBass", "driveMid", "driveTreble", "driveTone", "pitchDual", "pitchSecond"]
-  .map((name, i) => ({id: 67 + i, input: get(name)}));
+  .map((name, i) => ({id: 99 + i, input: get(name)}));
+const delayFields = [{id: 78, input: get("delayModel")}];
 const stereoFields = ["modPattern", "modStereo", "delayStereo", "reverbStereo"]
   .map((name, i) => ({id: 80 + i, input: get(name)}));
 const liveMidiFields = [{id: 84, input: get("liveExpression")}];
 const liveNavigation = 85;
-const expressionCommand = 64;
-const libraryLockCommand = 65;
+const expressionCommand = 97;
+const libraryLockCommand = 98;
 const orderId = 52;
 const parameterCount = fields[fields.length - 1].id + 1;
 const ratios = [1, 1 / 2, 3 / 4, 1 / 3, 1 / 4];
@@ -193,71 +152,6 @@ let stereoControls = false;
 let nativeMidi = false;
 let navigationTimer;
 let manualDestination = false;
-const undoStack = [];
-let snapA, snapB, abShowing = "A";
-let midiMessages = 0;
-let midiMonitorPaused = false;
-const midiRecent = new Map();
-const MIDI_LOG_LIMIT = 60;
-const MIDI_RECENT_LIMIT = 12;
-const sceneLabels = ["Base", "Solo", "Ambiente", "Cena 4"];
-
-function renderRecentCc() {
-  const list = get("midiRecentCc");
-  list.replaceChildren();
-  for (const [cc, value] of midiRecent) {
-    const item = document.createElement("li");
-    const label = document.createElement("code");
-    label.textContent = `CC ${cc}`;
-    item.append(label, document.createTextNode(` ${value}`));
-    list.append(item);
-  }
-}
-
-function logMidi(data) {
-  if (midiMonitorPaused || !data?.length || data[0] >= 0xF0) return;
-  const message = describeMidi(data);
-  if (!message) return;
-  midiMessages++;
-  const item = document.createElement("li");
-  const time = document.createElement("time");
-  time.textContent = new Date().toLocaleTimeString("pt-BR");
-  const kind = document.createElement("span");
-  kind.className = "midi-kind";
-  kind.dataset.kind = message.kind.toLowerCase();
-  kind.textContent = message.kind;
-  const text = document.createElement("span");
-  text.textContent = message.text;
-  item.append(time, kind, text);
-  const log = get("midiLog");
-  log.append(item);
-  while (log.children.length > MIDI_LOG_LIMIT) log.firstElementChild.remove();
-  log.scrollTop = log.scrollHeight;
-  if ((data[0] & 0xF0) === 0xB0) {
-    midiRecent.delete(data[1]);
-    midiRecent.set(data[1], data[2]);
-    while (midiRecent.size > MIDI_RECENT_LIMIT) midiRecent.delete(midiRecent.keys().next().value);
-    renderRecentCc();
-  }
-  get("midiMonitorStatus").textContent = `${midiMessages} mensagem(ns) recebida(s)`;
-}
-
-function clearMidiMonitor() {
-  midiMessages = 0;
-  midiRecent.clear();
-  get("midiLog").replaceChildren();
-  get("midiRecentCc").replaceChildren();
-  get("midiMonitorStatus").textContent = "Aguardando mensagens do Chocolate.";
-}
-
-get("midiMonitorClear").addEventListener("click", clearMidiMonitor);
-get("midiMonitorPause").addEventListener("click", () => {
-  midiMonitorPaused = !midiMonitorPaused;
-  const button = get("midiMonitorPause");
-  button.setAttribute("aria-pressed", String(midiMonitorPaused));
-  button.textContent = midiMonitorPaused ? "Retomar" : "Pausar";
-  get("midiMonitorStatus").textContent = midiMonitorPaused ? "Monitor pausado." : "Aguardando mensagens do Chocolate.";
-});
 
 const toggles = {
   drive: {id: 59, bypass: true, type: 45, initial: 1},
@@ -291,15 +185,12 @@ function toggleEffect(blockId) {
     if (enabled && effect.type !== undefined && !current[effect.type]) {
       if (effect.initial === undefined) {
         status.textContent = "Selecione um IR no bloco Caixa antes de ligar o efeito.";
-        toast("Selecione um IR antes de ligar o efeito.");
         return;
       }
       await writeParam(effect.type, effect.initial);
     }
     await writeParam(effect.id, Number(enabled !== Boolean(effect.bypass)));
     await refresh();
-    const name = blocks.find(block => block.dataset.block === blockId)?.querySelector(".pedal-name").textContent;
-    toast(`${name} ${enabled ? "ligado" : "desligado"}`);
   });
 }
 
@@ -331,7 +222,6 @@ function navigateMidi(cc) {
     if (!link) return;
     const connection = link;
     await writeParam(liveNavigation, cc);
-    toast(`CC ${cc} enviado à GP-5`);
     clearTimeout(navigationTimer);
     navigationTimer = setTimeout(() => {
       if (link === connection && !libraryBusy) run(refresh);
@@ -343,13 +233,11 @@ for (const button of document.querySelectorAll("[data-midi-nav]"))
   button.addEventListener("click", () => navigateMidi(Number(button.dataset.midiNav)));
 
 function controllerMessage({data}) {
-  if (!link || libraryBusy || !data?.length) return;
-  logMidi(data);
-  if (data.length < 2 || (data[0] & 15) + 1 !== get("midiChannel").valueAsNumber) return;
+  if (!link || libraryBusy || data.length < 2 || (data[0] & 15) + 1 !== get("midiChannel").valueAsNumber) return;
   const type = data[0] & 240;
   if (type === 0xc0) {
     const presets = current[28] === 2;
-    if (data[1] > (presets ? 29 : 3)) return;
+    if (data[1] > (presets ? 29 : 2)) return;
     clearExpression();
     run(async () => {
       if (!link) return;
@@ -418,14 +306,6 @@ function closeController() {
 
 get("midiSource").addEventListener("change", selectController);
 get("expressionTarget").addEventListener("change", resetExpression);
-for (const [id, min, max] of [["midiChannel", 1, 16], ["expressionCc", 0, 127], ["expressionHeel", 0, 100], ["expressionToe", 0, 100]]) {
-  get(id).addEventListener("change", () => {
-    const input = get(id);
-    const value = input.valueAsNumber;
-    if (!Number.isFinite(value)) return;
-    input.value = String(Math.min(max, Math.max(min, Math.round(value))));
-  });
-}
 
 async function request(op, ...payload) {
   link.flush();
@@ -440,23 +320,6 @@ async function request(op, ...payload) {
         (op !== 0x12 || !reply[2] || reply[5] === payload[0])) return reply;
   }
   throw new Error("A GP-5 não respondeu. Confira o cabo e feche outros editores.");
-}
-
-function renderVisor() {
-  const connected = Boolean(link);
-  const slot = connected ? Number(current[7] ?? 0) : 0;
-  const name = slot === 0
-    ? "Captura interna"
-    : installed.find(entry => entry.kind === "tone" && entry.slot === slot)?.name ?? `Slot ${String(slot).padStart(2, "0")}`;
-  const mode = connected && liveTools ? Number(current[bypassId] ?? 0) : 0;
-  get("visorBank").textContent = slot ? `BANCO ${String(Math.ceil(slot / 4)).padStart(2, "0")}` : "BANCO --";
-  get("visorSlot").textContent = slot ? `SLOT ${String(slot).padStart(2, "0")}` : "SLOT --";
-  get("visorName").textContent = connected ? name : "GP-5 desconectada";
-  get("visorScene").textContent = connected ? ["BASE", "SOLO", "AMBIENTE", "CENA 4"][Number(current[27] ?? 0)] ?? "—" : "—";
-  get("visorState").textContent = !connected ? "" : mode === 1 ? "BYPASS" : mode === 2 ? "SÓ DRIVE" : "CADEIA";
-  const hasSlots = connected && installed.some(entry => entry.kind === "tone");
-  get("visorPrev").disabled = !hasSlots;
-  get("visorNext").disabled = !hasSlots;
 }
 
 function showValues() {
@@ -497,14 +360,9 @@ function showValues() {
   get("eq7").parentElement.hidden = eqMode !== 2;
   for (const button of document.querySelectorAll("[data-scene]"))
     button.setAttribute("aria-pressed", String(button.dataset.scene === get("scene").value));
-  if (get("boardFootMode") !== document.activeElement) get("boardFootMode").value = String(current[28] ?? 0);
-  if (get("delayModel") !== document.activeElement) get("delayModel").value = String(current[78] ?? 0);
-  if (get("gateModel") !== document.activeElement) get("gateModel").value = String(current[79] ?? 0);
-  if (get("tunerRef") !== document.activeElement) get("tunerRef").value = String(current[92] ?? 440);
-  if (get("presetVolume") !== document.activeElement) get("presetVolume").value = String(current[95] ?? 100);
   get("midiPrograms").textContent = current[28] === 2
     ? "PC 0 a 29 selecionam os presets NAM 01 a 30."
-    : "PC 0, 1 e 2 selecionam Base, Solo e Ambiente.";
+    : "PC 0, 1, 2 e 3 selecionam Base, Solo, Ambiente e Cena 4.";
   const bypass = liveTools && current[bypassId] === 1;
   const driveOnly = liveTools && current[bypassId] === 2;
   get("driveOnly").hidden = !liveTools;
@@ -529,9 +387,6 @@ function showValues() {
   get("driveKnobs").hidden = !extendedControls;
   get("dualPitchControls").hidden = !extendedControls;
   get("pitchSecondRow").hidden = !get("pitchDual").checked;
-  const harmony = [0, 3, 4, 7, 12].indexOf(current[73]);
-  if (get("harmony") !== document.activeElement && current[31] === 1 && current[72] === 1)
-    get("harmony").value = String(harmony > 0 ? harmony : 0);
   get("capturePicker").hidden = get("ampVoice").value !== "0";
   for (const block of blocks) {
     const id = block.dataset.block;
@@ -543,7 +398,6 @@ function showValues() {
       selectedToggle.textContent = enabled ? "Ligado" : "Desligado";
     }
   }
-  renderVisor();
 }
 
 const movable = ["eq", null, "mod", "delay", "cloud", "volumePedal", "pitch"];
@@ -589,106 +443,13 @@ function moveOrder(step) {
 }
 get("moveLeft").addEventListener("click", () => moveOrder(-1));
 get("moveRight").addEventListener("click", () => moveOrder(1));
-function selectScene(index) {
-  if (!link || libraryBusy) return;
-  get("scene").value = String(index);
-  get("scene").dispatchEvent(new Event("change"));
-  toast(`Cena ${sceneLabels[index] ?? index + 1}`);
-}
-for (const button of document.querySelectorAll("[data-scene]"))
-  button.addEventListener("click", () => selectScene(Number(button.dataset.scene)));
-
-get("boardFootMode").addEventListener("change", () => {
-  if (!link || libraryBusy) return;
-  get("sceneMode").value = get("boardFootMode").value;
-  get("sceneMode").dispatchEvent(new Event("change"));
-  toast(`Foot: ${get("boardFootMode").selectedOptions[0].textContent}`);
-});
-get("delayModel").addEventListener("change", () => {
-  if (!link || libraryBusy) return;
-  run(async () => {
-    if (!link) return;
-    const model = Number(get("delayModel").value);
-    await writeParam(78, model);
-    current[78] = model;
-    toast(`Delay: ${get("delayModel").selectedOptions[0].textContent}`);
+for (const button of document.querySelectorAll("[data-scene]")) {
+  button.addEventListener("click", () => {
+    if (!link || libraryBusy) return;
+    get("scene").value = button.dataset.scene;
+    get("scene").dispatchEvent(new Event("change"));
   });
-});
-get("gateModel").addEventListener("change", () => {
-  if (!link || libraryBusy) return;
-  run(async () => {
-    if (!link) return;
-    const model = Number(get("gateModel").value);
-    await writeParam(79, model);
-    current[79] = model;
-    toast(`Gate: ${get("gateModel").selectedOptions[0].textContent}`);
-  });
-});
-get("harmony").addEventListener("change", () => {
-  if (!link || libraryBusy) return;
-  const value = Number(get("harmony").value);
-  run(async () => {
-    if (!link) return;
-    if (!value) await writeParam(72, 0);
-    else {
-      await writeParam(31, 1);
-      await writeParam(72, 1);
-      await writeParam(73, [0, 3, 4, 7, 12][value]);
-      if (!current[33]) await writeParam(33, 50);
-    }
-    await refresh();
-    toast(value ? `Harmonista: ${get("harmony").selectedOptions[0].textContent}` : "Harmonista off");
-  });
-});
-
-function syncSceneButtons(max) {
-  const container = get("sceneButtons");
-  const select = get("scene");
-  const count = Math.max(3, Math.min(4, (Number(max) || 2) + 1));
-  for (let index = select.options.length; index < count; index++)
-    select.add(new Option(sceneLabels[index] ?? `Cena ${index + 1}`, index));
-  const buttons = [...container.querySelectorAll("[data-scene]")];
-  for (let index = buttons.length; index < count; index++) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.scene = String(index);
-    button.setAttribute("aria-pressed", "false");
-    button.textContent = sceneLabels[index] ?? `Cena ${index + 1}`;
-    button.addEventListener("click", () => selectScene(index));
-    container.append(button);
-  }
-  for (let index = buttons.length; index > count; index--) buttons[index - 1].remove();
 }
-get("quickGlobal").addEventListener("click", () => {
-  setView("global");
-  if (link) get("globalBass").focus();
-  else toast("Conecte a GP-5 para ajustar o EQ global.");
-});
-
-function jumpBank(step) {
-  if (!link || libraryBusy) return;
-  const slots = installed.filter(entry => entry.kind === "tone").map(entry => entry.slot).sort((a, b) => a - b);
-  if (!slots.length) { toast("Nenhuma captura nos slots da GP-5."); return; }
-  const currentSlot = Number(current[7] ?? 0);
-  let target = (currentSlot ? Math.ceil(currentSlot / 4) : 0) + step;
-  while (target >= 1 && target <= 8) {
-    const slot = slots.find(candidate => Math.ceil(candidate / 4) === target);
-    if (slot !== undefined) {
-      run(async () => {
-        if (!link) return;
-        clearExpression();
-        await writeParam(7, slot);
-        await refresh();
-        toast(`Banco ${String(target).padStart(2, "0")} · slot ${String(slot).padStart(2, "0")}`);
-      });
-      return;
-    }
-    target += step;
-  }
-  toast(step > 0 ? "Último banco com capturas" : "Primeiro banco com capturas");
-}
-get("visorPrev").addEventListener("click", () => jumpBank(-1));
-get("visorNext").addEventListener("click", () => jumpBank(1));
 
 async function readExtraParameters(group) {
   const {id} = group[0];
@@ -708,7 +469,7 @@ async function readParameters() {
     const data = new DataView(result.buffer, result.byteOffset + 3, 2 * count);
     for (let i = 0; i < count; i++) values.push(data.getInt16(i * 2, true));
   }
-  for (const group of [extendedControls && extraFields, stereoControls && stereoFields, nativeMidi && liveMidiFields].filter(Boolean)) {
+  for (const group of [extendedControls && extraFields, delayFields, stereoControls && stereoFields, nativeMidi && liveMidiFields].filter(Boolean)) {
     const extra = await readExtraParameters(group);
     if (extra.length !== group.length) throw new Error("Resposta incompleta dos parâmetros adicionais.");
     extra.forEach((value, index) => { values[group[index].id] = value; });
@@ -719,27 +480,16 @@ async function readParameters() {
 async function refresh() {
   const values = await readParameters();
   current = values;
-  const modelReply = await request(0x11, 78, 0, 1).catch(() => null);
-  current[78] = modelReply?.[2] === 1 ? modelReply[3] : 0;
-  const gateReply = await request(0x11, 79, 0, 1).catch(() => null);
-  current[79] = gateReply?.[2] === 1 ? gateReply[3] : 0;
-  const refReply = await request(0x11, 92, 0, 1).catch(() => null);
-  current[92] = refReply?.[2] === 1 ? refReply[3] : 440;
-  const presetVolReply = await request(0x11, 95, 0, 1).catch(() => null);
-  current[95] = presetVolReply?.[2] === 1 ? presetVolReply[3] : 100;
   syncOrder(values[orderId]);
   fitSlotSelect(get("capture"), "tone", values[7], "Captura interna");
   fitSlotSelect(get("quickPreset"), "tone", values[7], "Captura interna");
-  const presetName = get("quickPreset").selectedOptions[0]?.text ?? "";
-  get("presetFullName").textContent = presetName;
-  get("quickPreset").title = presetName;
   fitSlotSelect(get("ir"), "cab", values[6], "Nenhum IR");
   const model = values[63] ? get("ampVoice").options[values[63]]?.text : get("capture").selectedOptions[0]?.text;
   const outputMode = liveTools ? values[bypassId] : 0;
   const label = outputMode === 1 ? "Sinal direto (bypass)" : outputMode === 2 ? "Só o drive" : model;
   status.textContent = label ? `GP-5 conectada · ${label}` : "GP-5 conectada";
-  for (const field of [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]) {
-    if (field.input === document.activeElement || field.input.matches(":active")) continue;
+  for (const field of [...fields, ...delayFields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]) {
+    if ((field.input.type === "number" && field.input === document.activeElement) || field.input.matches(":active")) continue;
     if (field.input.type === "checkbox") field.input.checked = values[field.id] === 1;
     else field.input.value = values[field.id];
   }
@@ -764,7 +514,6 @@ get("chainBypass").addEventListener("click", () => run(async () => {
   if (!link || libraryBusy || !liveTools) return;
   await writeParam(bypassId, Number(!current[bypassId]));
   await refresh();
-  toast(current[bypassId] ? "Cadeia em bypass" : "Timbre ativo");
 }));
 get("driveOnly").addEventListener("click", () => run(async () => {
   if (!link || libraryBusy || !liveTools) return;
@@ -776,7 +525,6 @@ get("driveOnly").addEventListener("click", () => run(async () => {
     await writeParam(bypassId, 2);
   }
   await refresh();
-  toast(current[bypassId] === 2 ? "Ouvindo só o drive" : "Voltou à cadeia completa");
 }));
 get("activateAmp").addEventListener("click", () => run(async () => {
   if (!link || libraryBusy) return;
@@ -801,7 +549,6 @@ function run(operation) {
   pending++;
   queue = queue.then(operation).catch(async (error) => {
     status.textContent = error.message;
-    toast(error.message);
     closeController();
     slotsRead = false;
     installed = [];
@@ -851,19 +598,15 @@ connect.addEventListener("click", async () => {
       const reply = await request(0x12, id, 0);
       const [name, group] = decoder.decode(reply.slice(15)).split("\0");
       const max = reply[11] | reply[12] << 8;
-      const expected = {23: 62, 51: 4, 61: 1, 63: 6};
-      if (reply[2] !== 1)
-        throw new Error(`Esta versão do editor precisa do firmware GP-5 NAM Studio. (resposta ${reply.length} bytes: ${Array.from(reply.slice(0, 8)).join(",")})`);
+      const expected = {23: 62, 45: 31, 51: 4, 61: 1, 63: 20};
+      if (reply[2] !== 1 || name !== field.name || group !== field.group || (max !== expected[id] && !(id === 45 && max === 36)))
+        throw new Error("Esta versão do editor precisa do firmware GP-5 NAM Studio.");
       if (id === 45) {
         for (const option of field.input.options) option.hidden = option.disabled = Number(option.value) > max;
       }
     }
     const footDescriptor = await request(0x12, 28, 0);
-    const footMax = footDescriptor[2] === 1 ? (footDescriptor[11] | footDescriptor[12] << 8) : 2;
-    for (const select of [get("sceneMode"), get("boardFootMode")])
-      for (const option of select.options) option.disabled = Number(option.value) > footMax;
-    const sceneDescriptor = await request(0x12, 27, 0).catch(() => null);
-    if (sceneDescriptor?.[2] === 1) syncSceneButtons(sceneDescriptor[11] | sceneDescriptor[12] << 8);
+    get("sceneMode").querySelector('option[value="2"]').disabled = footDescriptor[2] !== 1 || footDescriptor[11] < 2;
     const bypassDescriptor = await request(0x12, bypassId, 0);
     liveTools = decoder.decode(bypassDescriptor.slice(15)).split("\0")[0] === "Output Mode";
     extendedControls = liveTools && (await readExtraParameters(extraFields)).length === extraFields.length;
@@ -880,9 +623,6 @@ connect.addEventListener("click", async () => {
     midiAccess = ports.access;
     midiAccess.addEventListener("statechange", updateMidiSources);
     updateMidiSources();
-    clearMidiMonitor();
-    if (nativeMidi)
-      get("midiMonitorStatus").textContent = "Chocolate no computador: a GP-5 não é host USB neste firmware. Ligue a Chocolate (ou o receptor) na USB do PC e escolha a entrada acima.";
     setDisabled(false);
     connect.textContent = "Desconectar";
     showOrder();
@@ -891,19 +631,13 @@ connect.addEventListener("click", async () => {
   connect.disabled = false;
 });
 
-for (const { id, input } of [...fields, ...extraFields, ...stereoFields, ...liveMidiFields]) {
+for (const { id, input } of [...fields, ...extraFields, ...delayFields, ...stereoFields, ...liveMidiFields]) {
   input.addEventListener("input", showValues);
   input.addEventListener("change", () => {
     if (!input.checkValidity() || input.value === "") { input.reportValidity(); return; }
     const value = input.type === "checkbox" ? Number(input.checked) : Number(input.value);
-    if (current[id] !== value) {
-      undoStack.push({ id, value: current[id] });
-      if (undoStack.length > 30) undoStack.shift();
-      get("undoChange").disabled = false;
-    }
     run(async () => {
       if (!link) return;
-      setSaveState("Salvando…");
       if (id === 27 || id === 7) clearExpression();
       await writeParam(id, value);
       const pairedEffect = Object.values(toggles).find(effect => effect.bypass && effect.type === id);
@@ -912,84 +646,9 @@ for (const { id, input } of [...fields, ...extraFields, ...stereoFields, ...live
       if (id === 63) await activateAmplifier();
       input.blur();
       await refresh();
-      if (current[id] !== value) {
-        await writeParam(id, value);
-        await refresh();
-      }
-      setSaveState(current[id] === value ? "Salvo" : "Não confirmado");
     });
   });
 }
-get("saveScene").addEventListener("click", () => run(async () => {
-  if (!link || libraryBusy) return;
-  setSaveState("Salvando…");
-  const list = [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])];
-  for (const { id, input } of list) {
-    const value = input.type === "checkbox" ? Number(input.checked) : Number(input.value);
-    if (Number.isFinite(value)) await writeParam(id, value);
-  }
-  await refresh();
-  const saved = list.every(({ id, input }) =>
-    current[id] === (input.type === "checkbox" ? Number(input.checked) : Number(input.value)));
-  setSaveState(saved ? "Salvo" : "Não confirmado");
-  toast(saved ? "Cena salva na GP-5" : "A GP-5 não confirmou todos os ajustes. Tente de novo.");
-}));
-get("undoChange").addEventListener("click", () => run(async () => {
-  if (!link || libraryBusy) return;
-  const entry = undoStack.pop();
-  if (!entry) return;
-  await writeParam(entry.id, entry.value);
-  await refresh();
-  get("undoChange").disabled = !undoStack.length;
-  toast("Ajuste desfeito");
-}));
-function snapshotAll() {
-  return [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]
-    .map(({ id }) => current[id]);
-}
-function applySnapshot(values) {
-  return applySnapshotFrom(values, [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]);
-}
-async function applySnapshotFrom(values, list) {
-  for (const { id } of list) if (id !== 7 && id !== 27 && Number.isFinite(values[id])) await writeParam(id, values[id]);
-  await refresh();
-}
-get("snapshotA").addEventListener("click", () => run(async () => {
-  if (!link || libraryBusy) return;
-  await refresh();
-  snapA = snapshotAll();
-  get("toggleAB").disabled = !(snapA && snapB);
-  toast("Snapshot A salvo");
-}));
-get("snapshotB").addEventListener("click", () => run(async () => {
-  if (!link || libraryBusy) return;
-  await refresh();
-  snapB = snapshotAll();
-  get("toggleAB").disabled = !(snapA && snapB);
-  toast("Snapshot B salvo");
-}));
-get("toggleAB").addEventListener("click", () => run(async () => {
-  if (!link || libraryBusy) return;
-  const values = abShowing === "A" ? snapB : snapA;
-  if (!values) return;
-  await applySnapshotFrom(values, [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : []), ...(nativeMidi ? liveMidiFields : [])]);
-  abShowing = abShowing === "A" ? "B" : "A";
-  toast(`Mostrando ${abShowing}`);
-}));
-get("copyScene").addEventListener("click", () => run(async () => {
-  if (!link || libraryBusy) return;
-  const source = Number(get("scene").value);
-  const target = Number(get("copyTarget").value);
-  if (source === target) { toast("Escolha uma cena diferente."); return; }
-  const values = await readParameters();
-  await writeParam(27, target);
-  for (const { id } of [...fields, ...(extendedControls ? extraFields : []), ...(stereoControls ? stereoFields : [])]) {
-    if (id === 7 || id === 27) continue;
-    if (Number.isFinite(values[id])) await writeParam(id, values[id]);
-  }
-  await refresh();
-  toast(`Cena copiada para ${get("copyTarget").selectedOptions[0].textContent}`);
-}));
 get("worshipSettings").addEventListener("click", () => {
   if (!link || libraryBusy) return;
   run(async () => {
@@ -997,7 +656,6 @@ get("worshipSettings").addEventListener("click", () => {
     const settings = [[18, 10], [14, 42], [15, 84], [16, 35], [17, 65], [53, 10], [54, 2], [13, 1]];
     for (const [id, value] of settings) await writeParam(id, value);
     await refresh();
-    toast("Ajuste Worship aplicado");
   });
 });
 
@@ -1018,7 +676,7 @@ function fitSlotSelect(select, kind, slot, emptyLabel, rebuild = false) {
   if (rebuild) {
     select.replaceChildren(new Option(emptyLabel, "0"));
     for (const entry of installed.filter(item => item.kind === kind))
-      select.add(new Option(`B${Math.ceil(entry.slot / 4)} · ${String(entry.slot).padStart(2, "0")} · ${entry.name}`, entry.slot));
+      select.add(new Option(`${String(entry.slot).padStart(2, "0")} · ${entry.name}`, entry.slot));
   }
   if (![...select.options].some(option => Number(option.value) === slot))
     select.add(new Option(`Slot ${slot}`, slot));
@@ -1032,7 +690,6 @@ get("quickPreset").addEventListener("change", () => {
     clearExpression();
     await writeParam(7, slot);
     await refresh();
-    toast(`Preset ${slot === 0 ? "interno" : String(slot).padStart(2, "0")} carregado`);
   });
 });
 
@@ -1059,36 +716,21 @@ function useInstalledSlot(kind, slot, name) {
     }
     await refresh();
     showLibraryProgress(`${name} selecionado.${liveTools && current[bypassId] ? " Use Ativar timbre no Pedalboard para sair do bypass." : ""}`);
-    toast(`${name} carregado`);
   });
 }
 
 function showSlots() {
-  const list = get("slotList");
-  list.replaceChildren();
+  get("slotList").replaceChildren();
   if (libraryTab === "presets") return;
-  const query = get("slotFilter").value.trim().toLowerCase();
-  const favorites = new Set(JSON.parse(localStorage.getItem("gp5-fav-tone") || "[]"));
-  const favOnly = get("favOnly").checked;
   const entries = installed.filter(item => item.kind === libraryTab);
   const slots = new Map(entries.map(item => [item.slot, item.name]));
-  const label = libraryTab === "tone" ? "capturas" : "IRs";
-  get("slotCount").textContent = `${slots.size} ocupadas · ${30 - slots.size} livres`;
-  let shown = 0;
   for (let slot = 1; slot <= 30; slot++) {
-    const stored = slots.get(slot);
-    if (favOnly && !favorites.has(slot)) continue;
-    if (query && !String(slot).includes(query) && !stored?.toLowerCase().includes(query)) continue;
-    shown++;
     const row = document.createElement("li");
-    row.dataset.slot = String(slot);
-    row.classList.add(stored ? "slot-occupied" : "slot-free");
     const number = document.createElement("code");
     const name = document.createElement("span");
     const select = document.createElement("button");
-    number.textContent = `B${Math.ceil(slot / 4)}·${String(slot).padStart(2, "0")}`;
-    name.textContent = stored ?? (slotsRead ? "Vazio" : link ? "…" : "–");
-    name.className = stored ? "slot-name" : "slot-name slot-empty";
+    number.textContent = String(slot).padStart(2, "0");
+    name.textContent = slots.get(slot) ?? (link ? "Vazio" : "–");
     select.className = "secondary";
     select.type = "button";
     select.textContent = "Destino";
@@ -1102,105 +744,25 @@ function showSlots() {
     const actions = document.createElement("div");
     actions.className = "slot-actions";
     actions.append(select);
-    if (stored) {
-      const star = document.createElement("button");
-      star.className = "secondary star";
-      star.type = "button";
-      star.textContent = favorites.has(slot) ? "★" : "☆";
-      star.setAttribute("aria-label", `Favoritar ${stored}`);
-      star.addEventListener("click", () => {
-        const list = new Set(JSON.parse(localStorage.getItem("gp5-fav-tone") || "[]"));
-        if (list.has(slot)) list.delete(slot);
-        else list.add(slot);
-        localStorage.setItem("gp5-fav-tone", JSON.stringify([...list]));
-        showSlots();
-      });
-      actions.prepend(star);
-      if (libraryTab === "tone") {
-        const rename = document.createElement("button");
-        rename.className = "secondary";
-        rename.type = "button";
-        rename.textContent = "Renomear";
-        rename.setAttribute("aria-label", `Renomear ${stored}`);
-        rename.disabled = !link;
-        rename.addEventListener("click", () => {
-          if (!link || libraryBusy) return;
-          const input = prompt(`Novo nome para ${stored}`, stored);
-          if (input === null) return;
-          const name = input.trim();
-          if (!name) return;
-          transferLibrary(2, async (heartbeat) => {
-            await heartbeat();
-            await renameSlotFile(link, slot, name);
-            return `Slot ${String(slot).padStart(2, "0")} renomeado para "${name}".`;
-          });
-        });
-        actions.prepend(rename);
-        const move = document.createElement("button");
-        move.className = "secondary";
-        move.type = "button";
-        move.textContent = "Mover";
-        move.setAttribute("aria-label", `Mover ${stored} para outro slot`);
-        move.disabled = !link;
-        move.addEventListener("click", () => {
-          if (!link || libraryBusy) return;
-          const to = Number(prompt(`Mover ${stored} para o slot (1–30):`, String(slot)));
-          if (!Number.isInteger(to) || to < 1 || to > 30 || to === slot) return;
-          const taken = installed.some(entry => entry.kind === "tone" && entry.slot === to);
-          if (taken && !confirm(`O slot ${to} já tem captura e será substituído. Continuar?`)) return;
-          transferLibrary(2, async (heartbeat) => {
-            await heartbeat();
-            await moveSlotFile(link, slot, to);
-            return `Slot ${String(slot).padStart(2, "0")} movido para ${String(to).padStart(2, "0")}.`;
-          });
-        });
-        actions.prepend(move);
-        const erase = document.createElement("button");
-        erase.className = "secondary";
-        erase.type = "button";
-        erase.textContent = "Apagar";
-        erase.setAttribute("aria-label", `Apagar ${stored}`);
-        erase.disabled = !link;
-        erase.addEventListener("click", () => {
-          if (!link || libraryBusy) return;
-          if (!confirm(`Apagar a captura "${stored}" do slot ${slot}?`)) return;
-          transferLibrary(2, async (heartbeat) => {
-            await heartbeat();
-            await deleteSlotFile(link, slot);
-            return `Slot ${String(slot).padStart(2, "0")} apagado.`;
-          });
-        });
-        actions.prepend(erase);
-      }
+    if (slots.has(slot)) {
       const use = document.createElement("button");
       const kind = libraryTab;
       use.className = "secondary";
       use.type = "button";
       use.textContent = "Usar";
-      use.setAttribute("aria-label", `Usar ${stored}`);
+      use.setAttribute("aria-label", `Usar ${slots.get(slot)}`);
       use.disabled = !link;
-      use.addEventListener("click", () => {
-        if (libraryBusy) return;
-        useInstalledSlot(kind, slot, stored);
-      });
+      use.addEventListener("click", () => useInstalledSlot(kind, slot, slots.get(slot)));
       actions.prepend(use);
     }
     row.append(number, name, actions);
-    list.append(row);
-  }
-  if (!shown) {
-    const row = document.createElement("li");
-    row.className = "slot-empty-row";
-    row.textContent = query ? "Nenhum slot corresponde ao filtro." : "Nenhum arquivo nesta aba.";
-    list.append(row);
+    get("slotList").append(row);
   }
 }
 
 function setLibraryTab(tab) {
   if (tab !== libraryTab) get("slotFile").value = "";
   libraryTab = tab;
-  get("slotFilter").hidden = tab === "presets";
-  get("slotCount").hidden = tab === "presets";
   for (const button of document.querySelectorAll("[data-library-tab]"))
     button.setAttribute("aria-pressed", String(button.dataset.libraryTab === tab));
   for (const panel of document.querySelectorAll("[data-library-panel]"))
@@ -1231,8 +793,6 @@ for (const button of document.querySelectorAll("[data-view]"))
   button.addEventListener("click", () => setView(button.dataset.view));
 for (const button of document.querySelectorAll("[data-library-tab]"))
   button.addEventListener("click", () => setLibraryTab(button.dataset.libraryTab));
-get("slotFilter").addEventListener("input", showSlots);
-get("favOnly").addEventListener("change", showSlots);
 get("openCaptures").addEventListener("click", () => { setLibraryTab("tone"); setView("library"); });
 get("openIrs").addEventListener("click", () => { setLibraryTab("cab"); setView("library"); });
 get("reloadSlots").addEventListener("click", () => run(() => link && refreshNamedSlots()));
@@ -1276,8 +836,8 @@ async function transferLibrary(mode, operation, progress = showLibraryProgress) 
       acquired = true;
       result = await operation(() => lock(mode));
     } catch (error) {
-      progress(error.message);
-      toast(error.message);
+      const prefix = acquired && mode === 2 ? "Transferência interrompida. " : "";
+      progress(prefix + error.message);
     } finally {
       if (acquired) {
         try { await lock(0); }
@@ -1308,30 +868,24 @@ function saveDownload(data, filename, type = "application/octet-stream") {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto = false, askConfirm = true) {
+async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto = false) {
   if (!link || libraryBusy) throw new Error("Conecte a GP-5 antes de enviar os arquivos.");
   const extension = kind === "cab" ? /\.wav$/i : /\.nam$/i;
   const format = kind === "cab" ? "WAV" : "NAM A2";
   if (!files.length) throw new Error(`Use Escolher arquivos aqui e selecione os arquivos ${format} antes de enviar.`);
   if (!Number.isInteger(slot) || slot < 1 || slot > 30) throw new Error("Escolha um slot de 1 a 30.");
   if (files.some(file => !extension.test(file.name))) throw new Error(`Selecione apenas arquivos ${format}.`);
-  if (files.length === 1 && !auto && askConfirm && !confirm(`Gravar no slot ${slot}? O arquivo nesse slot será substituído.`)) return;
+  if (files.length === 1 && !auto && !confirm(`Gravar no slot ${slot}? O arquivo nesse slot será substituído.`)) return;
   await transferLibrary(2, async (heartbeat) => {
-    progress(`Preparando ${files.length} arquivo(s) ${format}…`);
-    const plan = files.length === 1 && !auto
-      ? { entries: [await prepareSlotFile(files[0], slot)], rejected: [] }
-      : await planSlotBatch(link, files, slot, kind, progress);
-    const entries = plan.entries;
-    const used = entries.map(entry => Number(entry.name.slice(-2))).join(", ");
-    progress(`Gravando ${entries.length} arquivo(s) nos slots ${used}…`);
+    progress(`Verificando ${files.length} arquivo(s) ${format}…`);
+    const entries = files.length === 1 && !auto
+      ? [await prepareSlotFile(files[0], slot)]
+      : await planSlotBatch(link, files, slot, kind);
     const written = [];
     try {
       for (const [i, entry] of entries.entries()) {
         await heartbeat();
-        const targetSlot = Number(entry.name.slice(-2));
-        if (installed.some(item => item.kind === kind && item.slot === targetSlot)) {
-          await deleteSlotFile(link, targetSlot);   /* replace an existing capture */
-        }        await sendSlotFile(link, entry, details => progress(`${i + 1}/${entries.length} · ${details}`));
+        await sendSlotFile(link, entry, details => progress(`${i + 1}/${entries.length} · ${details}`));
         written.push(entry.name.slice(-2));
       }
     } catch (error) {
@@ -1339,34 +893,24 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
     }
     return async () => {
       const confirmed = slotsRead && written.every(slot => installed.some(entry => entry.kind === kind && entry.slot === Number(slot)));
-      const skipped = plan.rejected.length
-        ? ` Ignorados: ${plan.rejected.slice(0, 3).map(item => `${item.name} (${item.message})`).join("; ")}${plan.rejected.length > 3 ? "…" : ""}.`
-        : "";
       if (confirmed && extendedControls) {
         const reply = await request(0x11, kind === "tone" ? 74 : 76, 0, 2);
         if (reply[2] === 2 && reply.length >= 7) {
           const mask = new DataView(reply.buffer, reply.byteOffset + 3, 4).getUint32(0, true);
           const rejected = written.filter(slot => !(mask & (1 << (Number(slot) - 1))));
-          if (rejected.length) return `A GP-5 leu a gravação, mas recusou o conteúdo dos slots ${rejected.join(", ")}. Confira se o formato do arquivo é compatível.${skipped}`;
+          if (rejected.length) return `A GP-5 leu a gravação, mas recusou o conteúdo dos slots ${rejected.join(", ")}. Confira se o formato do arquivo é compatível.`;
         }
       }
-      return (confirmed ? `${written.length} arquivo(s) gravado(s) nos slots ${written.join(", ")}. Toque em Usar para carregar.`
-        : "A gravação respondeu, mas a leitura final dos slots não confirmou os arquivos. Toque em Atualizar para conferir.") + skipped;
+      return confirmed ? `${written.length} arquivo(s) gravado(s) nos slots ${written.join(", ")}. Toque em Usar para carregar.`
+        : "A gravação respondeu, mas a leitura final dos slots não confirmou os arquivos. Toque em Atualizar para conferir.";
     };
   }, progress);
 }
 
 const slotFile = get("slotFile");
-const folderFile = get("folderFiles");
-let pendingImport = [];
-let importGeneration = 0;
-
 function pickFiles(manual) {
   manualDestination = manual;
   slotFile.value = "";
-  if (typeof slotFile.showPicker === "function") {
-    try { slotFile.showPicker(); return; } catch { /* browser refused: use the plain click */ }
-  }
   slotFile.click();
 }
 get("slotPicker").addEventListener("click", () => pickFiles(false));
@@ -1374,107 +918,18 @@ get("sendSlot").addEventListener("click", () => pickFiles(true));
 get("quickCaptures").addEventListener("click", () => {
   setLibraryTab("tone");
   setView("library");
-  window.scrollTo({ top: 0, behavior: "smooth" });
   if (link && !libraryBusy) pickFiles(false);
   else if (!link) showLibraryProgress("Conecte a GP-5 por USB para importar na pedaleira.");
 });
-
-async function classifyImportFile(file, kind) {
-  const extension = kind === "cab" ? /\.wav$/i : /\.nam$/i;
-  if (!extension.test(file.name)) return { file, ok: false, reason: `não é .${kind === "cab" ? "wav" : "nam"}` };
-  if (file.size > 32 * 1024 * 1024) return { file, ok: false, reason: "acima de 32 MB" };
-  if (kind === "cab") return { file, ok: true };
-  let text = "";
-  try {
-    text = await file.text();
-    validateNamA2(text);
-    return { file, ok: true };
-  } catch (error) {
-    return { file, ok: false, reason: namError(error, text) };
-  }
-}
-
-async function prepareImport(files) {
-  if (!files.length) return;
-  const generation = ++importGeneration;
-  const kind = libraryTab;
-  const list = get("importList");
-  const summary = get("importSummary");
-  list.replaceChildren();
-  pendingImport = [];
-  summary.textContent = `Analisando ${files.length} arquivo(s)…`;
-  for (const [index, file] of files.entries()) {
-    const item = await classifyImportFile(file, kind);
-    if (generation !== importGeneration) return;
-    const check = document.createElement("input");
-    check.type = "checkbox";
-    check.checked = item.ok;
-    check.disabled = !item.ok;
-    item.check = check;
-    const name = document.createElement("span");
-    name.className = "import-name";
-    name.textContent = file.name;
-    name.title = file.webkitRelativePath || file.name;
-    const state = document.createElement("span");
-    state.className = item.ok ? "import-ok" : "import-bad";
-    state.textContent = item.ok ? (kind === "cab" ? "WAV ok" : "A2-Lite ok") : (item.reason || "incompatível");
-    const row = document.createElement("li");
-    row.append(check, name, state);
-    list.append(row);
-    pendingImport.push(item);
-    if (index % 5 === 0) {
-      summary.textContent = `Analisando ${index + 1}/${files.length}…`;
-      await new Promise(resolve => setTimeout(resolve, 0));
-    }
-  }
-  if (generation !== importGeneration) return;
-  const ok = pendingImport.filter(item => item.ok).length;
-  const free = Math.max(0, 30 - installed.filter(entry => entry.kind === kind).length);
-  summary.textContent = `${ok} de ${files.length} compatível(is) · ${free} slot(s) vazio(s) de 30` +
-    (ok > free ? ` · só ${free} cabem nesta leva` : "");
-  get("importConfirm").disabled = !link || libraryBusy;
-  get("importPreview").hidden = false;
-  get("importPreview").scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-get("importCancel").addEventListener("click", () => {
-  importGeneration++;
-  pendingImport = [];
-  get("importPreview").hidden = true;
-  slotFile.value = "";
-  folderFile.value = "";
-});
-get("importConfirm").addEventListener("click", async () => {
-  importGeneration++;
-  const files = pendingImport.filter(item => item.ok && item.check.checked).map(item => item.file);
-  if (!files.length) { toast("Marque pelo menos um arquivo compatível."); return; }
-  get("importPreview").hidden = true;
-  try {
-    await sendFiles(files, manualDestination ? get("slotNumber").valueAsNumber : 1,
-      libraryTab, showLibraryProgress, !manualDestination, false);
-  } catch (error) {
-    showLibraryProgress(error.message);
-    toast(error.message);
-  }
-});
-
 slotFile.addEventListener("change", async () => {
   const files = [...slotFile.files];
-  if (files.length) await prepareImport(files);
+  if (!files.length) return;
+  try {
+    await sendFiles(files, manualDestination ? get("slotNumber").valueAsNumber : 1,
+      libraryTab, showLibraryProgress, !manualDestination);
+  } catch (error) { showLibraryProgress(error.message); }
 });
-get("folderPicker").addEventListener("click", () => {
-  folderFile.value = "";
-  folderFile.click();
-});
-folderFile.addEventListener("change", async () => {
-  const pattern = libraryTab === "cab" ? /\.wav$/i : /\.nam$/i;
-  const files = [...folderFile.files].filter(file => pattern.test(file.name));
-  if (!files.length) {
-    showLibraryProgress(`Nenhum arquivo ${libraryTab === "cab" ? "WAV" : "NAM"} na pasta escolhida.`);
-    return;
-  }
-  await prepareImport(files);
-});
+installCaptureBank((files, slot, progress) => sendFiles(files, slot, "tone", progress));
 
 const presetStatus = get("presetStatus");
 let valetonTemplate;
@@ -1509,141 +964,6 @@ get("exportPrst").addEventListener("click", () => run(async () => {
   if (link && !libraryBusy && valetonTemplate) saveDownload(exportPrst(valetonTemplate, await readParameters()), "GP-5-convertido.prst");
 }));
 
-for (let i = 1; i <= 30; i++) {
-  const option = document.createElement("option");
-  option.value = String(i);
-  option.textContent = `Slot ${String(i).padStart(2, "0")}`;
-  get("t3kSlot").append(option);
-}
-for (let hz = 430; hz <= 450; hz++) {
-  const option = document.createElement("option");
-  option.value = String(hz);
-  option.textContent = `${hz} Hz`;
-  get("tunerRef").append(option);
-}
-get("tunerRef").addEventListener("change", () => {
-  if (!link || libraryBusy) return;
-  run(async () => {
-    if (!link) return;
-    const hz = Number(get("tunerRef").value);
-    await writeParam(92, hz);
-    current[92] = hz;
-    toast(`A4 = ${hz} Hz`);
-  });
-});
-get("presetVolume").addEventListener("input", () => {
-  get("presetVolumeValue").textContent = `${get("presetVolume").value}%`;
-});
-get("presetVolume").addEventListener("change", () => {
-  if (!link || libraryBusy) return;
-  run(async () => {
-    if (!link) return;
-    const value = Number(get("presetVolume").value);
-    await writeParam(95, value);
-    current[95] = value;
-    toast(`Volume do preset: ${value}%`);
-  });
-});
-get("saveSceneNames").addEventListener("click", () => {
-  if (!link || libraryBusy) return;
-  const names = [0, 1, 2, 3].map(i => {
-    const value = get(`sceneName${i}`).value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, " ").trim().slice(0, 12);
-    return value;
-  });
-  run(async () => {
-    if (!link) return;
-    toast("Salvando nomes das cenas…");
-    for (let scene = 0; scene < 4; scene++) {
-      const name = names[scene];
-      for (let pos = 0; pos <= 12; pos++) {
-        const code = pos < name.length ? name.charCodeAt(pos) : 0;
-        await writeParam(93, (scene << 16) | (pos << 8) | (code & 0x7f));
-      }
-    }
-    toast("Nomes das cenas salvos");
-  });
-});
-function t3kRefreshState() {
-  const connected = Boolean(t3kToken());
-  get("t3kConnect").textContent = connected ? "Conectado" : "Conectar";
-  get("t3kConnect").disabled = connected;
-}
-get("t3kClient").value = t3kClient();
-t3kRefreshState();
-get("t3kConnect").addEventListener("click", () => {
-  t3kConnect(get("t3kClient").value.trim()).catch(error => toast(error.message));
-});
-get("t3kSearch").addEventListener("click", () => {
-  const query = get("t3kQuery").value.trim();
-  const results = get("t3kResults");
-  if (!query) { toast("Digite o que procurar."); return; }
-  if (!t3kToken()) { toast("Conecte a TONE3000 primeiro."); return; }
-  results.replaceChildren();
-  t3kSearch(query).then(list => {
-    if (!list.length) { toast("Nada encontrado."); return; }
-    for (const tone of list) {
-      const item = document.createElement("li");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "secondary";
-      button.textContent = `${tone.name || tone.title || "Tone"} · ${tone.user?.username || tone.creator || tone.id}`;
-      button.addEventListener("click", () => {
-        get("t3kTone").value = String(tone.id);
-        toast(`Selecionado: ${tone.name || tone.id}`);
-      });
-      item.append(button);
-      results.append(item);
-    }
-  }).catch(error => toast(error.message));
-});
-get("t3kSaveFile").addEventListener("click", () => {
-  const id = t3kIdFromInput(get("t3kTone").value);
-  if (!id) { toast("Informe o ID ou o link do tone."); return; }
-  if (!t3kToken()) { toast("Conecte a TONE3000 primeiro."); return; }
-  t3kDownloadFile(id).then(blob => {
-    const url = URL.createObjectURL(blob);
-    const link = Object.assign(document.createElement("a"), { href: url, download: `tone-${id}.nam` });
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast("Arquivo .nam baixado. Importe pelo computador.");
-  }).catch(error => toast(error.message));
-});
-get("t3kDownload").addEventListener("click", () => {
-  if (!link || libraryBusy) return;
-  const id = t3kIdFromInput(get("t3kTone").value);
-  if (!id) { toast("Informe o ID ou o link do tone."); return; }
-  if (!t3kToken()) { toast("Conecte a TONE3000 primeiro."); return; }
-  const slot = Number(get("t3kSlot").value) || 1;
-  transferLibrary(2, async (heartbeat) => {
-    await heartbeat();
-    const tone = await t3kTone(id).catch(() => null);
-    const rawName = String(tone?.name || tone?.title || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, " ").trim().slice(0, 23);
-    const prepare = async (file, target) => {
-      const entry = await prepareSlotFile(file, target);
-      if (rawName) patchToneName(entry.data, rawName);
-      return entry;
-    };
-    const entry = await t3kDownloadToSlot(id, slot, prepare,
-      async (fileEntry, progress) => {
-        await deleteSlotFile(link, slot);
-        await sendSlotFile(link, fileEntry, details => progress?.(details));
-      },
-      message => toast(message));
-    return `TONE3000: ${rawName || entry.name} gravado no slot ${String(slot).padStart(2, "0")}.`;
-  });
-});
-t3kHandleCallback().then(() => { get("t3kClient").value = t3kClient(); toast("TONE3000 conectado"); })
-  .catch(error => toast(error.message));
-window.addEventListener("message", event => {
-  if (event.origin !== location.origin) return;
-  if (event.data?.type === "t3k-token") {
-    t3kStoreTokens(event.data.tokens);
-    t3kRefreshState();
-    toast("TONE3000 conectado");
-  } else if (event.data?.type === "t3k-error") {
-    toast(`TONE3000: ${event.data.message}`);
-  }
-});
 get("exportLibrary").addEventListener("click", () => {
   transferLibrary(1, async (heartbeat) => {
     const reply = await request(0x11, 7, 0, 1);
@@ -1677,7 +997,3 @@ setInterval(() => {
 selectEffect(selectedBlock);
 setDisabled(true);
 setLibraryTab("tone");
-
-if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
-}

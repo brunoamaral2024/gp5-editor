@@ -326,3 +326,27 @@ h1 { font-size:clamp(1.5rem,3.5vw,2.45rem); }
   .limits { gap:.5rem; }
   .tone { gap:.55rem; }
 }
+
+/* ---- refinamento visual ---- */
+h1 { display:none !important; }
+main { max-width:1500px; margin:0 auto; padding-top:.85rem !important; }
+#status { margin:.15rem 0 .55rem !important; font-size:.82rem !important; color:var(--muted) !important; }
+header { padding:.5rem clamp(1rem,3vw,2rem) !important; background:#101218f2 !important; backdrop-filter:blur(10px); }
+.brand { font-size:.74rem !important; letter-spacing:.16em !important; }
+.workspace-tabs { margin:.5rem 0 .7rem !important; gap:.3rem !important; }
+.workspace-tabs button { padding:.4rem .8rem !important; font-size:.78rem !important; border-radius:.45rem !important; }
+.board { border-radius:.6rem !important; background:#15171e !important; border-color:#232733 !important; }
+.board-workspace { grid-template-columns:minmax(300px,350px) minmax(0,1fr) !important; gap:.75rem !important; }
+.board-head h2 { font-size:.76rem !important; text-transform:uppercase; letter-spacing:.14em; color:var(--muted) !important; }
+.effect-panel { border-radius:.6rem !important; background:#15171e !important; border-color:#232733 !important; }
+.effect-heading { padding:.5rem .75rem !important; background:#111319 !important; }
+.effect-heading h2 { margin:0; font-size:.95rem !important; }
+.effect-panel form { padding:.7rem !important; max-height:calc(100dvh - 15rem) !important; }
+.effect-panel label { font-size:.78rem !important; color:var(--muted) !important; }
+.effect-panel output { color:var(--text); font-variant-numeric:tabular-nums; }
+.pedal-art { max-width:4.4rem !important; }
+.pedal-name { font-size:.76rem !important; }
+.pedal-card { border-radius:.5rem !important; }
+.live-strip { gap:.5rem !important; }
+.live-strip fieldset { margin:0 !important; }
+input[type="range"] { accent-color:var(--accent) !important; }

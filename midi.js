@@ -17,12 +17,29 @@ export function buildSysex(cls, index, payload) {
 }
 
 export function parseSysex(msg) {
-  if (msg[0] !== 0xF0 || msg[msg.length - 1] !== 0xF7 || (msg.length - 2) % 2) return null;
-  const dec = [];
-  for (let i = 1; i < msg.length - 1; i += 2) dec.push(((msg[i] & 0xF) << 4) | (msg[i + 1] & 0xF));
-  if (dec.length < 4) return null;
-  const [crc, cls, index, len] = dec, pl = dec.slice(4, 4 + len);
-  return { cls, index, len, payload: Uint8Array.from(pl), ok: crc8([0, cls, index, len, ...pl]) === crc };
+  if (msg[0] !== 0xF0 || msg[msg.length - 1] !== 0xF7) return null;
+  const wire = Array.from(msg.slice(1, -1));
+  const decode = (bytes) => {
+    if (bytes.length % 2) return null;
+    const dec = [];
+    for (let i = 0; i < bytes.length; i += 2) dec.push(((bytes[i] & 0xF) << 4) | (bytes[i + 1] & 0xF));
+    return dec.length >= 4 ? dec : null;
+  };
+  const accept = (dec) => {
+    if (!dec) return null;
+    const [crc, cls, index, len] = dec, pl = dec.slice(4, 4 + len);
+    if (pl.length !== len) return null;
+    return crc8([0, cls, index, len, ...pl]) === crc ? { cls, index, len, payload: Uint8Array.from(pl), ok: true } : null;
+  };
+  /* Windows WinRT (Chrome) sometimes inserts a stray byte in a long SysEx. Try the
+   * frame as is, then with one byte removed, before giving up. */
+  const direct = accept(decode(wire));
+  if (direct) return direct;
+  for (let k = 0; k < wire.length; k++) {
+    const fixed = accept(decode(wire.slice(0, k).concat(wire.slice(k + 1))));
+    if (fixed) return fixed;
+  }
+  return null;
 }
 
 export function portBase(name) {
