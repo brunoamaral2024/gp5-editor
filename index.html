@@ -551,6 +551,20 @@
         <p class="note">Inclui os slots de capturas, IRs, presets e cenas.</p>
       </div>
     </fieldset>
+    <fieldset id="t3k" disabled>
+      <legend>TONE3000</legend>
+      <div class="tone">
+        <label for="t3kClient">Publishable key (t3k_pub_…)</label>
+        <input id="t3kClient" autocomplete="off" placeholder="t3k_pub_...">
+        <button id="t3kConnect" type="button" class="secondary">Conectar</button>
+        <p class="note">Registre esta página como redirect URI na sua chave da TONE3000.</p>
+        <label for="t3kTone">ID ou link do tone</label>
+        <input id="t3kTone" autocomplete="off" placeholder="Ex.: 44254 ou https://www.tone3000.com/tones/...">
+        <label for="t3kSlot">Slot de destino</label>
+        <select id="t3kSlot"></select>
+        <button id="t3kDownload" type="button">Baixar A2 e gravar no slot</button>
+      </div>
+    </fieldset>
       </div>
     </section>
     <fieldset id="quickOutput" class="quick-output" disabled>

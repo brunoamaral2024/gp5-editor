@@ -3,6 +3,7 @@ import { describeMidi } from "./midi-format.js";
 import { validateNamA2 } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { exportLibrary, listInstalledFiles, moveSlotFile, namError, parseLibrary, renameSlotFile, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js?v=import13";
+import { t3kClient, t3kConnect, t3kDownloadToSlot, t3kHandleCallback, t3kIdFromInput, t3kToken } from "./t3k.js?v=1";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -29,7 +30,7 @@ function setSaveState(text) {
     saveTimer = setTimeout(() => { if (element.textContent === "Salvo") element.textContent = ""; }, 2400);
 }
 const setDisabled = (disabled) => {
-  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput"), get("sceneToolsField")]) panel.disabled = disabled;
+  for (const panel of [...panels, get("performance"), get("midiMonitor"), get("liveMidi"), get("library"), get("libraryBackup"), get("slotUpload"), get("globalControls"), get("sceneBar"), get("presetBar"), get("tempoControls"), get("quickOutput"), get("sceneToolsField"), get("t3k")]) panel.disabled = disabled;
   const indicator = get("connectionState");
   indicator.dataset.online = String(!!link && !disabled);
   indicator.textContent = link && libraryBusy ? "Transferindo" : disabled ? "Desconectada" : "GP-5 conectada";
@@ -1454,6 +1455,32 @@ get("exportPrst").addEventListener("click", () => run(async () => {
   if (link && !libraryBusy && valetonTemplate) saveDownload(exportPrst(valetonTemplate, await readParameters()), "GP-5-convertido.prst");
 }));
 
+for (let i = 1; i <= 30; i++) {
+  const option = document.createElement("option");
+  option.value = String(i);
+  option.textContent = `Slot ${String(i).padStart(2, "0")}`;
+  get("t3kSlot").append(option);
+}
+get("t3kClient").value = t3kClient();
+get("t3kConnect").addEventListener("click", () => {
+  t3kConnect(get("t3kClient").value.trim()).catch(error => toast(error.message));
+});
+get("t3kDownload").addEventListener("click", () => {
+  if (!link || libraryBusy) return;
+  const id = t3kIdFromInput(get("t3kTone").value);
+  if (!id) { toast("Informe o ID ou o link do tone."); return; }
+  if (!t3kToken()) { toast("Conecte a TONE3000 primeiro."); return; }
+  const slot = Number(get("t3kSlot").value) || 1;
+  transferLibrary(2, async (heartbeat) => {
+    await heartbeat();
+    const entry = await t3kDownloadToSlot(id, slot, prepareSlotFile,
+      (fileEntry, progress) => sendSlotFile(link, fileEntry, details => progress?.(details)),
+      message => toast(message));
+    return `TONE3000: ${entry.name} gravado no slot ${String(slot).padStart(2, "0")}.`;
+  });
+});
+t3kHandleCallback().then(() => { get("t3kClient").value = t3kClient(); toast("TONE3000 conectado"); })
+  .catch(error => toast(error.message));
 get("exportLibrary").addEventListener("click", () => {
   transferLibrary(1, async (heartbeat) => {
     const reply = await request(0x11, 7, 0, 1);
