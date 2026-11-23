@@ -97,9 +97,8 @@ export async function t3kModels(id) {
 }
 
 export function t3kIdFromInput(text) {
-    const value = text.trim();
-    const match = value.match(/(\d{2,})/);
-    return match ? match[1] : "";
+    const numbers = String(text).match(/\d+/g);
+    return numbers ? numbers[numbers.length - 1] : "";   /* the trailing id, not a year inside the slug */
 }
 
 export async function t3kDownloadToSlot(toneId, slot, prepare, send, progress) {
