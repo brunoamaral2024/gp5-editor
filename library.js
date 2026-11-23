@@ -210,13 +210,49 @@ const NAM_ERRORS = [
   [/not a NAM capture/i, "o arquivo não é uma captura NAM"],
 ];
 
+// Cost of a NAM A1 (WaveNet) capture: MACs per sample, so the editor can tell
+// whether it could ever run in real time on the GP-5 control processor.
+export function analyzeA1(text) {
+  let model;
+  try { model = JSON.parse(text); } catch { return null; }
+  if (model?.architecture !== "WaveNet") return null;
+  const layers = model.config?.layers;
+  if (!Array.isArray(layers) || !layers.length) return null;
+  let macs = 0;
+  for (const layer of layers) {
+    const mid = layer.gated ? layer.channels * 2 : layer.channels;
+    macs += layer.channels * layer.input_size;
+    for (const _ of layer.dilations ?? []) {
+      macs += mid * layer.channels * layer.kernel_size;
+      macs += mid * layer.condition_size;
+      macs += layer.channels * layer.channels;
+    }
+    macs += layer.head_size * layer.channels;
+  }
+  let cin = layers.at(-1).head_size;
+  const headLayers = model.config?.head?.layers ?? [];
+  for (const [index, head] of headLayers.entries()) {
+    const out = index === headLayers.length - 1 ? model.config.head.out_channels : model.config.head.channels;
+    if (!out) break;
+    macs += cin * out;
+    cin = out;
+  }
+  const rate = model.sample_rate ?? 48000;
+  const macsPerSecond = macs * rate;
+  const channels = Math.max(...layers.map(layer => layer.channels));
+  return { macs, rate, macsPerSecond, cyclesPerMac: 320e6 / macsPerSecond, layers: layers.length, channels };
+}
+
 export function namError(error, text = "") {
   const message = String(error?.message ?? error);
   if (/not an A2-Lite model|no width-3 A2-Lite model|no A2-Lite part/i.test(message)) {
     let architecture;
     try { architecture = JSON.parse(text)?.architecture; } catch { /* keep the generic text */ }
-    if (architecture === "WaveNet")
+    if (architecture === "WaveNet") {
+      const report = analyzeA1(text);
+      if (report) return `captura NAM A1 (${report.layers} camadas, ${report.channels} canais): ${report.macs.toLocaleString("pt-BR")} MACs/amostra ≈ ${(report.macsPerSecond / 1e6).toFixed(0)} M MAC/s. A GP-5 tem 320 MHz (~${report.cyclesPerMac.toFixed(1)} ciclo/MAC): inviável em tempo real. Exporte a versão A2 no TONE3000.`;
       return "captura NAM A1 (formato antigo): a GP-5 só toca A2-Lite. Baixe ou exporte a versão A2.";
+    }
     return "captura A2 sem A2-Lite (a GP-5 só toca NAM A2-Lite)";
   }
   for (const [pattern, translated] of NAM_ERRORS) if (pattern.test(message)) return translated;
