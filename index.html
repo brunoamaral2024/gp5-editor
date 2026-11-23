@@ -178,6 +178,14 @@
     <label for="pitchSecond">Voz B · Semitons <output id="pitchSecondValue">12 st</output></label>
     <input id="pitchSecond" type="range" min="-12" max="12" value="12" data-unit=" st">
   </div>
+  <label for="harmony">Harmonista</label>
+  <select id="harmony">
+    <option value="0">Off</option>
+    <option value="1">3ª menor (+3)</option>
+    <option value="2">3ª maior (+4)</option>
+    <option value="3">5ª (+7)</option>
+    <option value="4">Oitava (+12)</option>
+  </select>
 </div>
 <label for="pitchMix">Mix <output id="pitchMixValue">50%</output></label>
 <input id="pitchMix" type="range" min="0" max="100" value="50" data-unit="%">
@@ -190,6 +198,11 @@
         <div class="tone">
           <label for="gate">Limiar <output id="gateValue" for="gate">Off</output></label>
           <input id="gate" type="range" min="0" max="61" value="0">
+          <label for="gateModel">Modelo</label>
+          <select id="gateModel">
+            <option value="0">Normal</option>
+            <option value="1">Smooth</option>
+          </select>
         </div>
       </fieldset>
       <fieldset id="compressor" data-panel hidden disabled>

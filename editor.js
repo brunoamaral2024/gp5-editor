@@ -487,6 +487,7 @@ function showValues() {
     button.setAttribute("aria-pressed", String(button.dataset.scene === get("scene").value));
   if (get("boardFootMode") !== document.activeElement) get("boardFootMode").value = String(current[28] ?? 0);
   if (get("delayModel") !== document.activeElement) get("delayModel").value = String(current[78] ?? 0);
+  if (get("gateModel") !== document.activeElement) get("gateModel").value = String(current[79] ?? 0);
   get("midiPrograms").textContent = current[28] === 2
     ? "PC 0 a 29 selecionam os presets NAM 01 a 30."
     : "PC 0, 1 e 2 selecionam Base, Solo e Ambiente.";
@@ -514,6 +515,9 @@ function showValues() {
   get("driveKnobs").hidden = !extendedControls;
   get("dualPitchControls").hidden = !extendedControls;
   get("pitchSecondRow").hidden = !get("pitchDual").checked;
+  const harmony = [0, 3, 4, 7, 12].indexOf(current[73]);
+  if (get("harmony") !== document.activeElement && current[31] === 1 && current[72] === 1)
+    get("harmony").value = String(harmony > 0 ? harmony : 0);
   get("capturePicker").hidden = get("ampVoice").value !== "0";
   for (const block of blocks) {
     const id = block.dataset.block;
@@ -594,6 +598,32 @@ get("delayModel").addEventListener("change", () => {
     await writeParam(78, model);
     current[78] = model;
     toast(`Delay: ${get("delayModel").selectedOptions[0].textContent}`);
+  });
+});
+get("gateModel").addEventListener("change", () => {
+  if (!link || libraryBusy) return;
+  run(async () => {
+    if (!link) return;
+    const model = Number(get("gateModel").value);
+    await writeParam(79, model);
+    current[79] = model;
+    toast(`Gate: ${get("gateModel").selectedOptions[0].textContent}`);
+  });
+});
+get("harmony").addEventListener("change", () => {
+  if (!link || libraryBusy) return;
+  const value = Number(get("harmony").value);
+  run(async () => {
+    if (!link) return;
+    if (!value) await writeParam(72, 0);
+    else {
+      await writeParam(31, 1);
+      await writeParam(72, 1);
+      await writeParam(73, [0, 3, 4, 7, 12][value]);
+      if (!current[33]) await writeParam(33, 50);
+    }
+    await refresh();
+    toast(value ? `Harmonista: ${get("harmony").selectedOptions[0].textContent}` : "Harmonista off");
   });
 });
 
@@ -677,6 +707,8 @@ async function refresh() {
   current = values;
   const modelReply = await request(0x11, 78, 0, 1).catch(() => null);
   current[78] = modelReply?.[2] === 1 ? modelReply[3] : 0;
+  const gateReply = await request(0x11, 79, 0, 1).catch(() => null);
+  current[79] = gateReply?.[2] === 1 ? gateReply[3] : 0;
   syncOrder(values[orderId]);
   fitSlotSelect(get("capture"), "tone", values[7], "Captura interna");
   fitSlotSelect(get("quickPreset"), "tone", values[7], "Captura interna");
