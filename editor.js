@@ -487,6 +487,7 @@ function showValues() {
   if (get("delayModel") !== document.activeElement) get("delayModel").value = String(current[78] ?? 0);
   if (get("gateModel") !== document.activeElement) get("gateModel").value = String(current[79] ?? 0);
   if (get("tunerRef") !== document.activeElement) get("tunerRef").value = String(current[92] ?? 440);
+  if (get("presetVolume") !== document.activeElement) get("presetVolume").value = String(current[95] ?? 100);
   get("midiPrograms").textContent = current[28] === 2
     ? "PC 0 a 29 selecionam os presets NAM 01 a 30."
     : "PC 0, 1 e 2 selecionam Base, Solo e Ambiente.";
@@ -710,6 +711,8 @@ async function refresh() {
   current[79] = gateReply?.[2] === 1 ? gateReply[3] : 0;
   const refReply = await request(0x11, 92, 0, 1).catch(() => null);
   current[92] = refReply?.[2] === 1 ? refReply[3] : 440;
+  const presetVolReply = await request(0x11, 95, 0, 1).catch(() => null);
+  current[95] = presetVolReply?.[2] === 1 ? presetVolReply[3] : 100;
   syncOrder(values[orderId]);
   fitSlotSelect(get("capture"), "tone", values[7], "Captura interna");
   fitSlotSelect(get("quickPreset"), "tone", values[7], "Captura interna");
@@ -1512,6 +1515,19 @@ get("tunerRef").addEventListener("change", () => {
     await writeParam(92, hz);
     current[92] = hz;
     toast(`A4 = ${hz} Hz`);
+  });
+});
+get("presetVolume").addEventListener("input", () => {
+  get("presetVolumeValue").textContent = `${get("presetVolume").value}%`;
+});
+get("presetVolume").addEventListener("change", () => {
+  if (!link || libraryBusy) return;
+  run(async () => {
+    if (!link) return;
+    const value = Number(get("presetVolume").value);
+    await writeParam(95, value);
+    current[95] = value;
+    toast(`Volume do preset: ${value}%`);
   });
 });
 get("saveSceneNames").addEventListener("click", () => {

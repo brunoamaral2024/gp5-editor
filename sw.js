@@ -1,6 +1,6 @@
 // Offline shell for the GP-5 editor. HTML/JS/CSS come from the network when online so deploys show up,
 // and from the cache when offline. Images and icons are cached first.
-const CACHE = "gp5-editor-v13";
+const CACHE = "gp5-editor-v14";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
