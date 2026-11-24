@@ -212,7 +212,13 @@
           <label class="switch" for="cabEnabled">IR ligado <input id="cabEnabled" type="checkbox"></label>
           <label for="ir">Slot de IR <small>0 = nenhum</small></label>
           <select id="ir"><option value="0">Nenhum IR</option></select>
-          <button type="button" id="openIrs" class="secondary">Gerenciar IRs</button>
+          <button type="button" id="openIrs" class="secondary">Gerenciar IRs</button>          <div class="ir-mix">
+            <label for="irMixA">IR A <input id="irMixA" type="file" accept=".wav,.cab,audio/*"></label>
+            <label for="irMixB">IR B <input id="irMixB" type="file" accept=".wav,.cab,audio/*"></label>
+            <label for="irMixBlend">Blend <output id="irMixBlendValue" for="irMixBlend">50%</output></label>
+            <input id="irMixBlend" type="range" min="0" max="100" value="50">
+            <button type="button" id="irMixMake" class="secondary">Gerar IR mix</button>
+          </div>
         </div>
       </fieldset>
       <fieldset id="eq" data-panel hidden disabled>

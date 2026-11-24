@@ -141,3 +141,11 @@ export function cabInfo(bytes, nameBytes) {
   return { taps, format: magic === MAGIC ? 1 : 2, tapBytes, name };
 }
 export const cabNameBytes = NAME_BYTES;
+
+/** Mix two IR sample arrays (already at CAB_RATE, mono). blend 0 = A, 1 = B. */
+export function mixIrSamples(a, b, blend) {
+  const n = Math.max(a.length, b.length);
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) out[i] = (i < a.length ? a[i] : 0) * (1 - blend) + (i < b.length ? b[i] : 0) * blend;
+  return out;
+}

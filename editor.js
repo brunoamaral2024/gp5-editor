@@ -1,4 +1,5 @@
 import { installCaptureBank } from "./capture-bank.js";
+import { decodeIr, makeCabFile, mixIrSamples } from "./convert-ir.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
 import { cmd as libraryCommand } from "./library-wire.js";
@@ -284,6 +285,20 @@ function controllerMessage({data}) {
   queuedExpression = target * 256 + percent;
   if (expressionTimer === undefined) expressionTimer = setTimeout(flushExpression, 32);
 }
+
+get("irMixMake").addEventListener("click", async () => {
+  const a = get("irMixA").files[0], b = get("irMixB").files[0];
+  if (!a || !b) { get("status").textContent = "Escolha a IR A e a IR B."; return; }
+  try {
+    const blend = get("irMixBlend").valueAsNumber / 100;
+    const da = await decodeIr(new Uint8Array(await a.arrayBuffer()));
+    const db = await decodeIr(new Uint8Array(await b.arrayBuffer()));
+    const samples = mixIrSamples(da.samples, db.samples, blend);
+    const name = `Mix ${Math.round(blend * 100)}% ${b.name}`.replace(/[^\w .%-]/g, "").slice(0, 31);
+    saveDownload(makeCabFile(samples, name), "IR-mix.cab");
+    get("status").textContent = "IR mix gerada: importe o arquivo em IRs.";
+  } catch (error) { get("status").textContent = `IR mix: ${error.message}`; }
+});
 
 get("expressionLearn").addEventListener("click", () => {
   expressionLearn = true;
