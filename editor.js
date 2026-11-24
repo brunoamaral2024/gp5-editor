@@ -290,7 +290,8 @@ function controllerMessage({data}) {
   if (expressionTimer === undefined) expressionTimer = setTimeout(flushExpression, 32);
 }
 
-get("lufsFile").addEventListener("change", async () => {
+const lufsIn = get("lufsFile");
+if (lufsIn) lufsIn.addEventListener("change", async () => {
   const file = get("lufsFile").files[0];
   if (!file) return;
   try {
@@ -301,7 +302,8 @@ get("lufsFile").addEventListener("change", async () => {
   } catch (error) { get("status").textContent = `LUFS: ${error.message}`; }
 });
 
-get("irMixMake").addEventListener("click", async () => {
+const mixBtn = get("irMixMake");
+if (mixBtn) mixBtn.addEventListener("click", async () => {
   const a = get("irMixA").files[0], b = get("irMixB").files[0];
   if (!a || !b) { get("status").textContent = "Escolha a IR A e a IR B."; return; }
   try {
@@ -315,7 +317,8 @@ get("irMixMake").addEventListener("click", async () => {
   } catch (error) { get("status").textContent = `IR mix: ${error.message}`; }
 });
 
-get("expressionLearn").addEventListener("click", () => {
+const learnBtn = get("expressionLearn");
+if (learnBtn) learnBtn.addEventListener("click", () => {
   expressionLearn = true;
   get("expressionLearn").textContent = "Mova o pedal...";
 });
@@ -903,7 +906,8 @@ async function exportAllCaptures() {
   } catch (error) { showLibraryProgress(`Falha ao exportar: ${error.message}`); }
 }
 
-get("exportCaptures").addEventListener("click", exportAllCaptures);
+const expAll = get("exportCaptures");
+if (expAll) expAll.addEventListener("click", exportAllCaptures);
 
 function base64ToBytes(b64) {
   const s = atob(b64);
@@ -912,7 +916,8 @@ function base64ToBytes(b64) {
   return out;
 }
 
-get("restoreCaptures").addEventListener("change", async () => {
+const restoreInput = get("restoreCaptures");
+if (restoreInput) restoreInput.addEventListener("change", async () => {
   const file = get("restoreCaptures").files[0];
   if (!file || !link) return;
   try {
@@ -933,8 +938,10 @@ get("restoreCaptures").addEventListener("change", async () => {
   } catch (error) { showLibraryProgress(`Restauração: ${error.message}`); }
   finally { get("restoreCaptures").value = ""; }
 });
-get("deleteSelected").addEventListener("click", () => deleteSlots([...deleteSelection]));
-get("deleteAll").addEventListener("click", () =>
+const delSelected = get("deleteSelected");
+if (delSelected) delSelected.addEventListener("click", () => deleteSlots([...deleteSelection]));
+const delAll = get("deleteAll");
+if (delAll) delAll.addEventListener("click", () =>
   deleteSlots(installed.filter(item => item.kind === libraryTab).map(item => item.slot)));
 
 function setLibraryTab(tab) {
