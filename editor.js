@@ -2,7 +2,7 @@ import { installCaptureBank } from "./capture-bank.js";
 import { decodeIr, makeCabFile, mixIrSamples } from "./convert-ir.js";
 import { integratedLufs } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
+import { deleteSlotFile, exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -807,6 +807,23 @@ function showSlots() {
       use.disabled = !link;
       use.addEventListener("click", () => useInstalledSlot(kind, slot, slots.get(slot)));
       actions.prepend(use);
+      const del = document.createElement("button");
+      del.className = "secondary";
+      del.type = "button";
+      del.textContent = "Apagar";
+      del.setAttribute("aria-label", `Apagar ${slots.get(slot)}`);
+      del.disabled = !link;
+      del.addEventListener("click", async () => {
+        if (!link || !confirm(`Apagar "${slots.get(slot)}" do slot ${slot}?`)) return;
+        try {
+          await deleteSlotFile(link, slot);
+          await refreshNamedSlots();
+          showLibraryProgress(`Slot ${slot} apagado.`);
+        } catch (error) {
+          showLibraryProgress(`Falha ao apagar: ${error.message}`);
+        }
+      });
+      actions.append(del);
     }
     row.append(number, name, actions);
     get("slotList").append(row);
