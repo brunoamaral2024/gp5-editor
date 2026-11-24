@@ -904,6 +904,35 @@ async function exportAllCaptures() {
 }
 
 get("exportCaptures").addEventListener("click", exportAllCaptures);
+
+function base64ToBytes(b64) {
+  const s = atob(b64);
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+
+get("restoreCaptures").addEventListener("change", async () => {
+  const file = get("restoreCaptures").files[0];
+  if (!file || !link) return;
+  try {
+    const backup = JSON.parse(await file.text());
+    if (backup.format !== "gp5-captures" || !Array.isArray(backup.slots) || !backup.slots.length)
+      throw new Error("Arquivo não é um backup de capturas do GP-5.");
+    const kind = backup.kind === "cab" ? "cab" : "tone";
+    if (!confirm(`Restaurar ${backup.slots.length} arquivo(s) na GP-5?`)) return;
+    await transferLibrary(2, async (heartbeat) => {
+      for (const item of backup.slots) {
+        await heartbeat();
+        const name = `${kind === "cab" ? "cab" : "tone"}-${String(item.slot).padStart(2, "0")}`;
+        await sendSlotFile(link, { name, data: base64ToBytes(item.data) }, details => showLibraryProgress(`${item.slot}: ${details}`));
+      }
+    });
+    await refreshNamedSlots();
+    showLibraryProgress(`${backup.slots.length} arquivo(s) restaurado(s).`);
+  } catch (error) { showLibraryProgress(`Restauração: ${error.message}`); }
+  finally { get("restoreCaptures").value = ""; }
+});
 get("deleteSelected").addEventListener("click", () => deleteSlots([...deleteSelection]));
 get("deleteAll").addEventListener("click", () =>
   deleteSlots(installed.filter(item => item.kind === libraryTab).map(item => item.slot)));
