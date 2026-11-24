@@ -1207,3 +1207,16 @@ setLibraryTab("tone");
     if (status) status.textContent = "Song List gravada no pedal.";
   }));
 })();
+(() => {
+  const apply = get("ctlApply");
+  if (!apply) return;
+  apply.addEventListener("click", () => run(async () => {
+    if (!link) throw new Error("Conecte a GP-5 antes de aplicar o CTL.");
+    const bits = [["ctlDrive", 1], ["ctlMod", 2], ["ctlDelay", 4], ["ctlReverb", 8], ["ctlBoost", 16]];
+    let mask = 0;
+    for (const [id, bit] of bits) if (get(id)?.checked) mask |= bit;
+    await writeParam(123, mask);
+    const status = get("ctlStatus");
+    if (status) status.textContent = mask ? "CTL gravado no pedal." : "CTL vazio (usa o grupo padrao).";
+  }));
+})();

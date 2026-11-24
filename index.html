@@ -82,6 +82,16 @@
       </div>
     </nav>
     <fieldset id="tempoControls" class="tempo-controls" disabled>
+      <fieldset id="ctlPanel">
+        <legend>CTL (blocos do footswitch)</legend>
+        <label><input id="ctlDrive" type="checkbox"> Drive</label>
+        <label><input id="ctlMod" type="checkbox"> Mod</label>
+        <label><input id="ctlDelay" type="checkbox"> Delay</label>
+        <label><input id="ctlReverb" type="checkbox"> Reverb</label>
+        <label><input id="ctlBoost" type="checkbox"> Boost</label>
+        <button type="button" id="ctlApply">Aplicar no pedal</button>
+        <p id="ctlStatus"></p>
+      </fieldset>
       <fieldset id="songListPanel">
         <legend>Song List (A-Z)</legend>
         <label for="songListOrder">Ordem dos presets (ex.: 3,1,2,5)</label>
