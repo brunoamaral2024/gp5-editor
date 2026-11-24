@@ -106,6 +106,7 @@ const fields = [
   { id: 75, name: "Attack", group: "Comp", input: get("compAttack") },
   { id: 76, name: "Release", group: "Comp", input: get("compRelease") },
   { id: 114, name: "Mod Width", group: "Mod", input: get("modWidth") },
+  { id: 115, name: "Auto Level", group: "NAM", input: get("namAutoLevel") },
   { id: 37, name: "EQ Mode", group: "EQ", input: get("eqMode") },
   { id: 38, name: "EQ 1", group: "EQ", input: get("eq1") },
   { id: 39, name: "EQ 2", group: "EQ", input: get("eq2") },
