@@ -139,7 +139,7 @@ const extraFields = ["driveGain", "driveBass", "driveMid", "driveTreble", "drive
 const delayFields = [{id: 116, input: get("delayModel")}];
 const stereoFields = [
   { id: 119, input: get("modPattern") },
-  { id: 81, input: get("modStereo") },
+  { id: 122, input: get("modStereo") },
   { id: 82, input: get("delayStereo") },
   { id: 83, input: get("reverbStereo") }
 ];
