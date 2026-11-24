@@ -212,7 +212,9 @@
           <label class="switch" for="cabEnabled">IR ligado <input id="cabEnabled" type="checkbox"></label>
           <label for="ir">Slot de IR <small>0 = nenhum</small></label>
           <select id="ir"><option value="0">Nenhum IR</option></select>
-          <button type="button" id="openIrs" class="secondary">Gerenciar IRs</button>          <div class="ir-mix">
+          <button type="button" id="openIrs" class="secondary">Gerenciar IRs</button>
+          <label for="lowCutValue">Low Cut</label><select id="lowCutValue"><option value="0">Desligado</option><option value="1">60 Hz</option><option value="2">90 Hz</option><option value="3">120 Hz</option><option value="4">180 Hz</option></select>
+<label for="highCutValue">High Cut</label><select id="highCutValue"><option value="0">Desligado</option><option value="1">4 kHz</option><option value="2">6 kHz</option><option value="3">8 kHz</option><option value="4">10 kHz</option></select>          <div class="ir-mix">
             <label for="irMixA">IR A <input id="irMixA" type="file" accept=".wav,.cab,audio/*"></label>
             <label for="irMixB">IR B <input id="irMixB" type="file" accept=".wav,.cab,audio/*"></label>
             <label for="irMixBlend">Blend <output id="irMixBlendValue" for="irMixBlend">50%</output></label>
@@ -345,8 +347,7 @@
             <input id="globalTreble" type="range" min="-12" max="12" value="0" data-unit=" dB">
           </div>
           <div class="global-card"><h2>Cortes de frequência</h2>
-            <label for="lowCutValue">Low Cut</label><select id="lowCutValue"><option value="0">Desligado</option><option value="1">60 Hz</option><option value="2">90 Hz</option><option value="3">120 Hz</option><option value="4">180 Hz</option></select>
-<label for="highCutValue">High Cut</label><select id="highCutValue"><option value="0">Desligado</option><option value="1">4 kHz</option><option value="2">6 kHz</option><option value="3">8 kHz</option><option value="4">10 kHz</option></select>
+            
 
           </div>
         </div>
