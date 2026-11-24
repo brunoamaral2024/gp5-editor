@@ -107,6 +107,8 @@ const fields = [
   { id: 76, name: "Release", group: "Comp", input: get("compRelease") },
   { id: 114, name: "Mod Width", group: "Mod", input: get("modWidth") },
   { id: 115, name: "Auto Level", group: "NAM", input: get("namAutoLevel") },
+  { id: 78, name: "Boost", group: "Boost", input: get("boostOn") },
+  { id: 79, name: "Boost Gain", group: "Boost", input: get("boostGain") },
   { id: 37, name: "EQ Mode", group: "EQ", input: get("eqMode") },
   { id: 38, name: "EQ 1", group: "EQ", input: get("eq1") },
   { id: 39, name: "EQ 2", group: "EQ", input: get("eq2") },
@@ -134,7 +136,7 @@ const tunerId = 30;
 const tunerFrequencyId = 66;
 const extraFields = ["driveGain", "driveBass", "driveMid", "driveTreble", "driveTone", "pitchDual", "pitchSecond"]
   .map((name, i) => ({id: 99 + i, input: get(name)}));
-const delayFields = [{id: 78, input: get("delayModel")}];
+const delayFields = [{id: 116, input: get("delayModel")}];
 const stereoFields = ["modPattern", "modStereo", "delayStereo", "reverbStereo"]
   .map((name, i) => ({id: 80 + i, input: get(name)}));
 const liveMidiFields = [{id: 84, input: get("liveExpression")}];

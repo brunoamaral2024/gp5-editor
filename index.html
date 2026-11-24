@@ -193,6 +193,9 @@
             <input id="ampGain" type="range" min="-24" max="24" value="0" data-unit=" dB">
             <label for="ampLevel">Volume <output id="ampLevelValue">0 dB</output></label>
             <input id="ampLevel" type="range" min="-12" max="12" value="0" data-unit=" dB">
+            <label class="switch" for="boostOn">Boost limpo <input id="boostOn" type="checkbox"></label>
+            <label for="boostGain">Boost (0..+3 dB) <output id="boostGainValue" for="boostGain">0 dB</output></label>
+            <input id="boostGain" type="range" min="0" max="3" value="0" data-unit=" dB">
             <label for="ampTone">Tone <output id="ampToneValue">0 dB</output></label>
             <input id="ampTone" type="range" min="-8" max="7" value="0" data-unit=" dB">
             <label for="ampBass">Grave <output id="ampBassValue">0 dB</output></label>
