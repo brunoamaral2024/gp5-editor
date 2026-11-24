@@ -158,6 +158,10 @@
           <input id="compRatio" type="range" min="2" max="8" value="4">
           <label for="compGain">Ganho de compensação <output id="compGainValue">0 dB</output></label>
           <input id="compGain" type="range" min="0" max="6" value="0">
+        <label for="compAttack">Attack <output id="compAttackValue" for="compAttack">5</output></label>
+        <input id="compAttack" type="range" min="0" max="15" value="5">
+        <label for="compRelease">Release <output id="compReleaseValue" for="compRelease">3</output></label>
+        <input id="compRelease" type="range" min="0" max="15" value="3">
         </div>
       </fieldset>
       <fieldset id="amp" data-panel hidden disabled>
@@ -274,6 +278,16 @@
         <input id="mix" type="range" min="0" max="100" value="25">
         <label for="feedback">Feedback <output id="feedbackValue" for="feedback">38%</output></label>
         <input id="feedback" type="range" min="0" max="90" value="38">
+        <label for="delayTone">Brilho <output id="delayToneValue" for="delayTone">50%</output></label>
+        <input id="delayTone" type="range" min="0" max="100" value="50">
+        <label for="delayModDepth">Mod Depth <output id="delayModDepthValue" for="delayModDepth">0%</output></label>
+        <input id="delayModDepth" type="range" min="0" max="100" value="0">
+        <label for="delayModRate">Mod Rate <output id="delayModRateValue" for="delayModRate">12</output></label>
+        <input id="delayModRate" type="range" min="1" max="80" value="12">
+        <label for="delayDuck">Duck Level <output id="delayDuckValue" for="delayDuck">50%</output></label>
+        <input id="delayDuck" type="range" min="0" max="100" value="50">
+        <label for="delayWidth">Width <output id="delayWidthValue" for="delayWidth">50%</output></label>
+        <input id="delayWidth" type="range" min="0" max="100" value="50">
       </div>
     </fieldset>
     <fieldset id="cloud" data-panel hidden disabled>
@@ -298,6 +312,10 @@
         <input id="cloudPre" type="range" min="0" max="100" value="25">
         <label for="cloudTone">Tone <output id="cloudToneValue">45%</output></label>
         <input id="cloudTone" type="range" min="0" max="100" value="45">
+        <label for="cloudEarly">Early <output id="cloudEarlyValue" for="cloudEarly">50%</output></label>
+        <input id="cloudEarly" type="range" min="0" max="100" value="50">
+        <label for="cloudMod">Tail Mod <output id="cloudModValue" for="cloudMod">0%</output></label>
+        <input id="cloudMod" type="range" min="0" max="100" value="0">
         <label for="lowDamp">Low Damp <output id="lowDampValue">47%</output></label>
         <input id="lowDamp" type="range" min="0" max="15" value="7">
         <label for="highDamp">Hi Damp <output id="highDampValue">13%</output></label>
