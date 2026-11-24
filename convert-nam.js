@@ -175,22 +175,51 @@ export const OUTPUT_LEVEL = -20.0, OUTPUT_PEAK_MAX = -3.0;
 const PLAY_SCALE = 0.17782794100389229;
 const KW = [[1.53512485958697, -2.69169618940638, 1.19839281085285, -1.69065929318241, 0.73248077421585],
             [1.0, -2.0, 1.0, -1.99004745483398, 0.99007225036621]];
-function outputLevel(m, calib) {
-  const u = new Float64Array(3 * SR);
-  for (let i = 0; i < u.length; i++) u[i] = calib[i] * PLAY_SCALE;
-  const y = ranges(m, u, true).y.subarray(2400);
-  let kw = y;
+
+/** K-weighting (BS.1770) in place. */
+function kWeight(x) {
+  let kw = x;
   for (const [b0, b1, b2, a1, a2] of KW) {
     const o = new Float64Array(kw.length);
     let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     for (let i = 0; i < kw.length; i++) {
-      const x = kw[i], v = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
-      x2 = x1; x1 = x; y2 = y1; y1 = v; o[i] = v;
+      const v = b0 * kw[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+      x2 = x1; x1 = kw[i]; y2 = y1; y1 = v; o[i] = v;
     }
     kw = o;
   }
-  let ms = 0; for (const v of kw) ms += v * v;
-  const loud = 10 * Math.log10(ms / kw.length + 1e-30);
+  return kw;
+}
+
+/** Integrated loudness, BS.1770: 400 ms blocks, 100 ms hop, absolute and relative gating. */
+export function integratedLufs(x, rate = 48000) {
+  const y = kWeight(x);
+  const block = Math.max(1, Math.round(0.4 * rate)), hop = Math.max(1, Math.round(0.1 * rate));
+  const powers = [];
+  for (let start = 0; start + block <= y.length; start += hop) {
+    let s = 0;
+    for (let i = start; i < start + block; i++) s += y[i] * y[i];
+    powers.push(s / block);
+  }
+  if (!powers.length) {
+    let s = 0; for (const v of y) s += v * v;
+    powers.push(s / Math.max(1, y.length));
+  }
+  const lufs = p => -0.691 + 10 * Math.log10(p + 1e-30);
+  const above = powers.filter(p => lufs(p) > -70);
+  if (!above.length) return lufs(0);
+  const mean = above.reduce((a, b) => a + b, 0) / above.length;
+  const gate = lufs(mean) - 10;
+  const gated = above.filter(p => lufs(p) > gate);
+  const meanGated = gated.reduce((a, b) => a + b, 0) / Math.max(1, gated.length);
+  return lufs(meanGated);
+}
+
+function outputLevel(m, calib) {
+  const u = new Float64Array(3 * SR);
+  for (let i = 0; i < u.length; i++) u[i] = calib[i] * PLAY_SCALE;
+  const y = ranges(m, u, true).y.subarray(2400);
+  const loud = integratedLufs(y);
   let pk = 0; for (const v of y) pk = Math.max(pk, Math.abs(v));
   const peak = 20 * Math.log10(pk + 1e-30);
   const g = Math.max(-40, Math.min(40, OUTPUT_LEVEL - loud, OUTPUT_PEAK_MAX - peak));

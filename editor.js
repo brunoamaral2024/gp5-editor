@@ -1,5 +1,6 @@
 import { installCaptureBank } from "./capture-bank.js";
 import { decodeIr, makeCabFile, mixIrSamples } from "./convert-ir.js";
+import { integratedLufs } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
 import { exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
 import { cmd as libraryCommand } from "./library-wire.js";
@@ -286,6 +287,17 @@ function controllerMessage({data}) {
   queuedExpression = target * 256 + percent;
   if (expressionTimer === undefined) expressionTimer = setTimeout(flushExpression, 32);
 }
+
+get("lufsFile").addEventListener("change", async () => {
+  const file = get("lufsFile").files[0];
+  if (!file) return;
+  try {
+    const { samples } = await decodeIr(new Uint8Array(await file.arrayBuffer()));
+    const lufs = integratedLufs(samples);
+    get("lufsValue").textContent = `${lufs.toFixed(1)} LUFS`;
+    get("status").textContent = `LUFS integrado (BS.1770): ${lufs.toFixed(1)} LUFS`;
+  } catch (error) { get("status").textContent = `LUFS: ${error.message}`; }
+});
 
 get("irMixMake").addEventListener("click", async () => {
   const a = get("irMixA").files[0], b = get("irMixB").files[0];
