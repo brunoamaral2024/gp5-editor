@@ -953,7 +953,9 @@ async function sendFiles(files, slot, kind, progress = showLibraryProgress, auto
           if (rejected.length) return `A GP-5 leu a gravação, mas recusou o conteúdo dos slots ${rejected.join(", ")}. Confira se o formato do arquivo é compatível.`;
         }
       }
-      return confirmed ? `${written.length} arquivo(s) gravado(s) nos slots ${written.join(", ")}. Toque em Usar para carregar.`
+      const found = entries.map(entry => entry.lufs).filter(value => value != null);
+      const lufsNote = found.length ? ` LUFS medido ${found[0].toFixed(1)} → nivelado a −20 LUFS.` : "";
+      return confirmed ? `${written.length} arquivo(s) gravado(s) nos slots ${written.join(", ")}.${lufsNote} Toque em Usar para carregar.`
         : "A gravação respondeu, mas a leitura final dos slots não confirmou os arquivos. Toque em Atualizar para conferir.";
     };
   }, progress);

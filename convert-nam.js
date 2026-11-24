@@ -367,11 +367,14 @@ export function convertNam(text, name, { calibrate = true, level = true } = {}) 
   calibCache ??= calibSignal();
   let levelDb = 0;
   if (level) {                                        // every capture equally loud: the head's scale (no range changes)
-    levelDb = outputLevel(m, calibCache).gainDb;
+    const measured = outputLevel(m, calibCache);
+    levelDb = measured.gainDb;
+    var lufs = measured.loud;
     m.hs = m.hs * 10 ** (levelDb / 20);
   }
   const q = quantize(m, ranges(m, calibCache));
-  return { blob: makeBlob(q, name), gainDb: 20 * Math.log10(g), levelDb, calibrated: calibrationGain(d) !== 1,
+  return { blob: makeBlob(q, name), gainDb: 20 * Math.log10(g), levelDb, lufs: typeof lufs === "number" ? lufs : null,
+           calibrated: calibrationGain(d) !== 1,
            name: new TextDecoder().decode(new TextEncoder().encode(name).slice(0, 24)).replace(/�$/, "") };
 }
 

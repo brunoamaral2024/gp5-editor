@@ -264,10 +264,10 @@ export async function prepareSlotFile(file, slot) {
   if (file.size > 32 * 1024 * 1024) throw new Error("O arquivo ultrapassa 32 MB.");
   const capture = /\.nam$/i.test(file.name);
   const label = file.name.replace(/\.[^.]+$/, "");
-  let data;
+  let data, converted;
   if (capture) {
     const text = await file.text();
-    try { data = convertNam(text, label).blob; }
+    try { converted = convertNam(text, label); data = converted.blob; }
     catch (error) { throw new Error(namError(error, text)); }
   } else if (/\.wav$/i.test(file.name)) {
     const { samples } = await decodeIr(new Uint8Array(await file.arrayBuffer()));
@@ -275,7 +275,7 @@ export async function prepareSlotFile(file, slot) {
   } else throw new Error("Selecione uma captura NAM A2 ou um IR WAV.");
   const name = `${capture ? "tone" : "cab"}-${String(slot).padStart(2, "0")}`;
   checkAudio(name, data);
-  return { name, data };
+  return { name, data, lufs: converted && converted.lufs != null ? converted.lufs : null };
 }
 
 export async function planSlotBatch(link, files, firstSlot, kind, progress = () => {}) {
