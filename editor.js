@@ -137,8 +137,12 @@ const tunerFrequencyId = 66;
 const extraFields = ["driveGain", "driveBass", "driveMid", "driveTreble", "driveTone", "pitchDual", "pitchSecond"]
   .map((name, i) => ({id: 99 + i, input: get(name)}));
 const delayFields = [{id: 116, input: get("delayModel")}];
-const stereoFields = ["modPattern", "modStereo", "delayStereo", "reverbStereo"]
-  .map((name, i) => ({id: 80 + i, input: get(name)}));
+const stereoFields = [
+  { id: 119, input: get("modPattern") },
+  { id: 81, input: get("modStereo") },
+  { id: 82, input: get("delayStereo") },
+  { id: 83, input: get("reverbStereo") }
+];
 const liveMidiFields = [{id: 84, input: get("liveExpression")}];
 const liveNavigation = 85;
 const expressionCommand = 97;
