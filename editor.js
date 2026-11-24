@@ -148,6 +148,7 @@ let pending = 0;
 let midiAccess;
 let controllerInput;
 let queuedExpression;
+let expressionLearn = false;
 let expressionTimer;
 let libraryBusy = false;
 let selectedLibrary;
@@ -256,6 +257,15 @@ function controllerMessage({data}) {
     return;
   }
   if (type !== 0xb0 || data.length !== 3) return;
+  if (expressionLearn) {
+    expressionLearn = false;
+    get("expressionCc").value = String(data[1]);
+    get("midiChannel").value = String((data[0] & 15) + 1);
+    const button = get("expressionLearn");
+    if (button) button.textContent = "Aprender CC";
+    get("expressionValue").textContent = `CC ${data[1]} · CH ${(data[0] & 15) + 1}`;
+    return;
+  }
   if (nativeMidi && data[1] >= 83 && data[1] <= 86) {
     if (data[2] >= 64) navigateMidi(data[1]);
     return;
@@ -274,6 +284,11 @@ function controllerMessage({data}) {
   queuedExpression = target * 256 + percent;
   if (expressionTimer === undefined) expressionTimer = setTimeout(flushExpression, 32);
 }
+
+get("expressionLearn").addEventListener("click", () => {
+  expressionLearn = true;
+  get("expressionLearn").textContent = "Mova o pedal...";
+});
 
 function updateMidiSources() {
   const select = get("midiSource");
