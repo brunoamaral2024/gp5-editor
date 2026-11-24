@@ -1190,3 +1190,20 @@ setInterval(() => {
 selectEffect(selectedBlock);
 setDisabled(true);
 setLibraryTab("tone");
+
+(() => {
+  const apply = get("songListApply");
+  if (!apply) return;
+  apply.addEventListener("click", () => run(async () => {
+    const input = get("songListOrder"), status = get("songListStatus");
+    if (!link) throw new Error("Conecte a GP-5 antes de aplicar a Song List.");
+    const nums = (input?.value || "").split(/[,\s]+/).filter(Boolean).map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 30);
+    if (!nums.length) throw new Error("Informe os numeros dos presets (1 a 30).");
+    const order = [];
+    for (const n of nums) if (!order.includes(n - 1)) order.push(n - 1);
+    for (let i = 0; i < 30; i++) await writeParam(121, (((i < order.length ? order[i] : 255) & 255) << 8) | i);
+    await writeParam(121, 30);
+    if (status) status.textContent = "Song List gravada no pedal.";
+  }));
+})();

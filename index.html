@@ -82,6 +82,13 @@
       </div>
     </nav>
     <fieldset id="tempoControls" class="tempo-controls" disabled>
+      <fieldset id="songListPanel">
+        <legend>Song List (A-Z)</legend>
+        <label for="songListOrder">Ordem dos presets (ex.: 3,1,2,5)</label>
+        <input id="songListOrder" type="text" placeholder="3,1,2,5,4">
+        <button type="button" id="songListApply">Aplicar no pedal</button>
+        <p id="songListStatus"></p>
+      </fieldset>
       <legend>Andamento</legend>
       <div class="tempo-grid">
         <label for="bpm">BPM</label>
