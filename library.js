@@ -344,8 +344,16 @@ export async function moveSlotFile(link, from, to) {
   return to;
 }
 
-export async function deleteSlotFile(link, slot) {
-  const name = `tone-${String(slot).padStart(2, "0")}`;
+export async function readSlotData(link, slot, kind = "tone") {
+  const name = `${kind === "cab" ? "cab" : "tone"}-${String(slot).padStart(2, "0")}`;
+  const dir = await listFiles(link);
+  const file = dir.files.find(entry => entry.name === name && entry.owner === OWNER);
+  if (!file) return null;
+  return readFile(link, file);
+}
+
+export async function deleteSlotFile(link, slot, kind = "tone") {
+  const name = `${kind === "cab" ? "cab" : "tone"}-${String(slot).padStart(2, "0")}`;
   const file = (await listFiles(link)).files.find(entry => entry.name === name && entry.owner === OWNER);
   if (file) await deleteFile(link, OWNER, name);
   return slot;

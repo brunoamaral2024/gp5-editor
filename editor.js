@@ -2,7 +2,7 @@ import { installCaptureBank } from "./capture-bank.js";
 import { decodeIr, makeCabFile, mixIrSamples } from "./convert-ir.js";
 import { integratedLufs } from "./convert-nam.js";
 import { makePreset, loadPreset, exportPrst } from "./preset.js?v=stereo";
-import { deleteSlotFile, exportLibrary, listInstalledFiles, parseLibrary, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
+import { deleteSlotFile, exportLibrary, listInstalledFiles, parseLibrary, readSlotData, restoreLibrary, planSlotBatch, prepareSlotFile, sendSlotFile } from "./library.js";
 import { cmd as libraryCommand } from "./library-wire.js";
 import { buildSysex, parseSysex, webMidiPorts } from "./midi.js?v=studio-pro";
 
@@ -158,6 +158,7 @@ let libraryBusy = false;
 let selectedLibrary;
 let current = [];
 let installed = [];
+const deleteSelection = new Set();
 let slotsRead = false;
 let libraryTab = "tone";
 let liveTools = false;
@@ -796,8 +797,26 @@ function showSlots() {
     });
     const actions = document.createElement("div");
     actions.className = "slot-actions";
+    if (slots.has(slot)) {
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = deleteSelection.has(slot);
+      check.setAttribute("aria-label", `Selecionar slot ${slot}`);
+      check.addEventListener("change", () => {
+        if (check.checked) deleteSelection.add(slot); else deleteSelection.delete(slot);
+        updateDeleteButtons();
+      });
+      actions.append(check);
+    }
     actions.append(select);
     if (slots.has(slot)) {
+      const exportBtn = document.createElement("button");
+      exportBtn.className = "secondary";
+      exportBtn.type = "button";
+      exportBtn.textContent = "Exportar";
+      exportBtn.disabled = !link;
+      exportBtn.addEventListener("click", () => exportSlot(slot, libraryTab === "cab" ? "cab" : "tone"));
+      actions.append(exportBtn);
       const use = document.createElement("button");
       const kind = libraryTab;
       use.className = "secondary";
@@ -828,7 +847,65 @@ function showSlots() {
     row.append(number, name, actions);
     get("slotList").append(row);
   }
+  updateDeleteButtons();
 }
+
+function updateDeleteButtons() {
+  const busy = !link || libraryBusy;
+  get("deleteSelected").disabled = busy || deleteSelection.size === 0;
+  get("deleteAll").disabled = busy || !installed.some(item => item.kind === libraryTab);
+  get("exportCaptures").disabled = busy || !installed.some(item => item.kind === libraryTab);
+}
+
+async function deleteSlots(slots) {
+  if (!link || !slots.length) return;
+  if (!confirm(`Apagar ${slots.length} arquivo(s) dos slots ${slots.join(", ")}?`)) return;
+  const kind = libraryTab === "cab" ? "cab" : "tone";
+  await transferLibrary(2, async () => {
+    for (const slot of slots) await deleteSlotFile(link, slot, kind);
+  });
+  for (const slot of slots) deleteSelection.delete(slot);
+  await refreshNamedSlots();
+  showLibraryProgress(`${slots.length} arquivo(s) apagado(s).`);
+}
+
+function bytesToBase64(bytes) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+async function exportSlot(slot, kind) {
+  if (!link) return;
+  try {
+    const data = await readSlotData(link, slot, kind);
+    if (!data) { showLibraryProgress(`Slot ${slot} vazio.`); return; }
+    const ext = kind === "cab" ? "cab" : "a2";
+    saveDownload(data, `GP-5-${kind}-${String(slot).padStart(2, "0")}.${ext}`);
+    showLibraryProgress(`Slot ${slot} exportado.`);
+  } catch (error) { showLibraryProgress(`Falha ao exportar: ${error.message}`); }
+}
+
+async function exportAllCaptures() {
+  if (!link) return;
+  const kind = libraryTab === "cab" ? "cab" : "tone";
+  const entries = installed.filter(item => item.kind === libraryTab);
+  if (!entries.length) { showLibraryProgress("Nada para exportar."); return; }
+  try {
+    const out = { format: "gp5-captures", kind, created: new Date().toISOString(), slots: [] };
+    for (const entry of entries) {
+      const data = await readSlotData(link, entry.slot, kind);
+      if (data) out.slots.push({ slot: entry.slot, name: entry.name, data: bytesToBase64(data) });
+    }
+    saveDownload(new TextEncoder().encode(JSON.stringify(out)), `GP-5-${kind === "cab" ? "irs" : "capturas"}.json`, "application/json");
+    showLibraryProgress(`${out.slots.length} arquivo(s) exportado(s).`);
+  } catch (error) { showLibraryProgress(`Falha ao exportar: ${error.message}`); }
+}
+
+get("exportCaptures").addEventListener("click", exportAllCaptures);
+get("deleteSelected").addEventListener("click", () => deleteSlots([...deleteSelection]));
+get("deleteAll").addEventListener("click", () =>
+  deleteSlots(installed.filter(item => item.kind === libraryTab).map(item => item.slot)));
 
 function setLibraryTab(tab) {
   if (tab !== libraryTab) get("slotFile").value = "";
