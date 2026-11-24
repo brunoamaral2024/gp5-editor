@@ -835,7 +835,8 @@ function showSlots() {
       del.addEventListener("click", async () => {
         if (!link || !confirm(`Apagar "${slots.get(slot)}" do slot ${slot}?`)) return;
         try {
-          await deleteSlotFile(link, slot);
+          const kind = libraryTab === "cab" ? "cab" : "tone";
+          await transferLibrary(2, async () => { await deleteSlotFile(link, slot, kind); });
           await refreshNamedSlots();
           showLibraryProgress(`Slot ${slot} apagado.`);
         } catch (error) {
