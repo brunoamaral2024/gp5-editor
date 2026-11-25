@@ -1220,3 +1220,18 @@ setLibraryTab("tone");
     if (status) status.textContent = mask ? "CTL gravado no pedal." : "CTL vazio (usa o grupo padrao).";
   }));
 })();
+/* Cortes de frequencia visiveis na aba Global: escrevem nos IDs 50/51 */
+(() => {
+  for (const [id, key] of [[50, "lowCut"], [51, "highCut"]]) {
+    const input = document.getElementById(key);
+    if (!input) continue;
+    input.addEventListener("change", () => {
+      const value = Number(input.value);
+      run(async () => {
+        if (!link) return;
+        await writeParam(id, value);
+        await refresh();
+      });
+    });
+  }
+})();
