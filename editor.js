@@ -1235,3 +1235,19 @@ setLibraryTab("tone");
     });
   }
 })();
+/* Globais (novos) com listener direto */
+(() => {
+  const map = [[28, "footMode2"], [81, "inputTrim2"], [82, "globalEq2"], [83, "ledStyle2"], [84, "uiTheme2"], [85, "uiLayout2"], [89, "paraDiv2"]];
+  for (const [id, key] of map) {
+    const input = document.getElementById(key);
+    if (!input) continue;
+    input.addEventListener("change", () => {
+      const value = Number(input.value);
+      run(async () => {
+        if (!link) return;
+        await writeParam(id, value);
+        await refresh();
+      });
+    });
+  }
+})();

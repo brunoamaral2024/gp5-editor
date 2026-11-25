@@ -377,7 +377,16 @@
           </div>
         </div>
           
-  </fieldset>
+  <section id="globalExtra" style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px">
+  <div style="grid-column:1/-1;font-weight:600;margin:0 0 4px">Globais (novos)</div>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">Foot Mode<select id="footMode2"><option>Stomp</option><option>Cenas</option><option>Presets 0-99</option><option>Tuner</option><option>Presets 0-9</option><option>CTL</option><option>Mute</option><option>Tap</option><option>Nada</option><option>A-Z</option></select></label>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">Input Trim (dB)<input id="inputTrim2" type="range" min="-12" max="12" step="1" value="0"></label>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">Global EQ<select id="globalEq2"><option>Custom</option><option>Flat</option><option>Bright</option><option>Warm</option><option>Scoop</option><option>Mid</option></select></label>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">LED<select id="ledStyle2"><option>Cena</option><option>Ambar</option><option>Ciano</option><option>Violeta</option><option>Verde</option><option>Vermelho</option></select></label>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">Tema<select id="uiTheme2"><option>Cena</option><option>Azul</option><option>Verde</option><option>Magenta</option></select></label>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">Layout<select id="uiLayout2"><option>Original</option><option>Compacto</option><option>Info</option></select></label>
+  <label style="display:flex;flex-direction:column;gap:6px;white-space:nowrap">Para Div<input id="paraDiv2" type="number" min="1" max="8" value="1"></label>
+</section></fieldset>
     </section>
     <section data-view-panel="midi" hidden>
     <fieldset id="liveMidi" disabled hidden>
