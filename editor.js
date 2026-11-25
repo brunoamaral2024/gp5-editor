@@ -1220,25 +1220,3 @@ setLibraryTab("tone");
     if (status) status.textContent = mask ? "CTL gravado no pedal." : "CTL vazio (usa o grupo padrao).";
   }));
 })();
-/* novos globais do firmware (v305+): aparecem na aba Global e gravam no pedal */
-(() => {
-  if (typeof fields === "undefined" || !document.getElementById("inputTrim")) return;
-  const extra = [
-    [81, "inputTrim"], [82, "globalEq"], [83, "ledStyle"], [84, "uiTheme"],
-    [85, "uiLayout"], [89, "paraDiv"], [50, "lowCut"], [51, "highCut"], [28, "footMode"]
-  ];
-  for (const [id, key] of extra) {
-    const input = document.getElementById(key);
-    if (!input) continue;
-    if (!fields.some((f) => f.id === id)) fields.push({ id, input });
-    input.addEventListener("change", () => {
-      if (!input.checkValidity() || input.value === "") { input.reportValidity(); return; }
-      const value = Number(input.value);
-      run(async () => {
-        if (!link) return;
-        await writeParam(id, value);
-        await refresh();
-      });
-    });
-  }
-})();
