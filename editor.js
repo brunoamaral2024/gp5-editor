@@ -1237,7 +1237,7 @@ setLibraryTab("tone");
 })();
 /* Globais (novos) com listener direto */
 (() => {
-  const map = [[28, "footMode2"], [81, "inputTrim2"], [82, "globalEq2"], [83, "ledStyle2"], [84, "uiTheme2"], [85, "uiLayout2"], [89, "paraDiv2"]];
+  const map = [[28, "footMode2"], [81, "inputTrim2"], [82, "globalEq2"], [83, "ledStyle2"], [84, "uiTheme2"], [85, "uiLayout2"], [89, "paraDiv2"], [90, "loadFast2"]];
   for (const [id, key] of map) {
     const input = document.getElementById(key);
     if (!input) continue;
