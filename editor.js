@@ -141,7 +141,7 @@ const stereoFields = [
   { id: 119, input: get("modPattern") },
   { id: 122, input: get("modStereo") },
   { id: 124, input: get("delayStereo") },
-  { id: 83, input: get("reverbStereo") }
+  { id: 125, input: get("reverbStereo") }
 ];
 const liveMidiFields = [{id: 84, input: get("liveExpression")}];
 const liveNavigation = 85;
