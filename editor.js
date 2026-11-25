@@ -1225,7 +1225,7 @@ setLibraryTab("tone");
   if (typeof fields === "undefined" || !document.getElementById("inputTrim")) return;
   const extra = [
     [81, "inputTrim"], [82, "globalEq"], [83, "ledStyle"], [84, "uiTheme"],
-    [85, "uiLayout"], [89, "paraDiv"], [50, "lowCut"], [51, "highCut"]
+    [85, "uiLayout"], [89, "paraDiv"], [50, "lowCut"], [51, "highCut"], [28, "footMode"]
   ];
   for (const [id, key] of extra) {
     const input = document.getElementById(key);
