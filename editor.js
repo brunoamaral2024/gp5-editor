@@ -143,7 +143,7 @@ const stereoFields = [
   { id: 124, input: get("delayStereo") },
   { id: 125, input: get("reverbStereo") }
 ];
-const liveMidiFields = [{id: 84, input: get("liveExpression")}];
+const liveMidiFields = [{id: 126, input: get("liveExpression")}];
 const liveNavigation = 85;
 const expressionCommand = 97;
 const libraryLockCommand = 98;
