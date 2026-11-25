@@ -1251,3 +1251,20 @@ setLibraryTab("tone");
     });
   }
 })();
+/* botao explicito para o Foot Mode (id 28) com retorno visivel */
+(() => {
+  const btn = document.getElementById("footModeApply");
+  const sel = document.getElementById("footMode2");
+  const st = document.getElementById("footModeStatus");
+  if (!btn || !sel || !st) return;
+  btn.addEventListener("click", () => run(async () => {
+    if (!link) { st.textContent = "Conecte a GP-5 primeiro."; return; }
+    try {
+      await writeParam(28, Number(sel.value));
+      await refresh();
+      st.textContent = "Foot Mode enviado: " + sel.value;
+    } catch (e) {
+      st.textContent = "Pedal recusou: " + (e && e.message ? e.message : e);
+    }
+  }));
+})();
